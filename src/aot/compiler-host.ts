@@ -28,6 +28,7 @@ export class NgcCompilerHost implements CompilerHost {
   }
 
   readFile(filePath: string): string {
+    //console.log('filePath: ', filePath);
     let fileContent = this.fileSystem.getFileContent(filePath);
     if (!fileContent) {
       fileContent = this.diskCompilerHost.readFile(filePath);
@@ -47,8 +48,6 @@ export class NgcCompilerHost implements CompilerHost {
       fileContent = JSON.stringify(packageJson);
     }
 
-    //console.log('\n\n\n\n filePath: ', filePath);
-    //console.log('fileContent: ', fileContent);
     return fileContent;
   }
 

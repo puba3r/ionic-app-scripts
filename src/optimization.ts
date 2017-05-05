@@ -2,12 +2,13 @@ import { basename, extname } from 'path';
 
 import * as MagicString from 'magic-string';
 
+import { AotCompiler } from './aot/aot-compiler';
 import { Logger } from './logger/logger';
 import { fillConfigDefaults, getUserConfigFile, replacePathVars } from './util/config';
 import * as Constants from './util/constants';
 import { BuildError } from './util/errors';
-import { changeExtension, getBooleanPropertyValue, getStringPropertyValue, webpackStatsToDependencyMap, printDependencyMap } from './util/helpers';
-import { BuildContext, TaskInfo } from './util/interfaces';
+import { changeExtension, getBooleanPropertyValue, getStringPropertyValue, printDependencyMap, readAndCacheFile, webpackStatsToDependencyMap } from './util/helpers';
+import { BuildContext, TaskInfo, TreeShakeCalcResults } from './util/interfaces';
 import { runWebpackFullBuild, WebpackConfig } from './webpack';
 import { addPureAnnotation, purgeStaticCtorFields, purgeStaticFieldDecorators, purgeTranspiledDecorators } from './optimization/decorators';
 import { calculateUnusedComponents,
@@ -35,6 +36,7 @@ export function optimization(context: BuildContext, configFile: string) {
 function optimizationWorker(context: BuildContext, configFile: string): Promise<any> {
   const webpackConfig = getConfig(context, configFile);
   let dependencyMap: Map<string, Set<string>> = null;
+  let response: TreeShakeCalcResults = null;
   if (optimizationEnabled()) {
     return runWebpackFullBuild(webpackConfig).then((stats: any) => {
       dependencyMap = webpackStatsToDependencyMap(context, stats);
@@ -47,6 +49,15 @@ function optimizationWorker(context: BuildContext, configFile: string): Promise<
       purgeGeneratedFiles(context, webpackConfig.output.filename);
     }).then(() => {
       return doOptimizations(context, dependencyMap);
+    }).then((treeShakeResults: TreeShakeCalcResults) => {
+      response = treeShakeResults;
+      // purge all ionic-angular files from the cache
+      const ionicAngularFiles = context.fileCache.getAll().filter(file => file.path.startsWith(context.ionicAngularDir));
+      ionicAngularFiles.forEach(file => context.fileCache.remove(file.path));
+      // read the fesm
+      return readAndCacheFile(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_ENTRY_POINT));
+    }).then((fesmContent: string) => {
+      console.log('fesm: ', fesmContent);
     });
   } else {
     return Promise.resolve();
@@ -58,13 +69,14 @@ export function purgeGeneratedFiles(context: BuildContext, fileNameSuffix: strin
   buildFiles.forEach(buildFile => context.fileCache.remove(buildFile.path));
 }
 
-export function doOptimizations(context: BuildContext, dependencyMap: Map<string, Set<string>>) {
+export function doOptimizations(context: BuildContext, dependencyMap: Map<string, Set<string>>): TreeShakeCalcResults {
   // remove decorators
   let modifiedMap = new Map(dependencyMap);
   if (getBooleanPropertyValue(Constants.ENV_PURGE_DECORATORS)) {
     removeDecorators(context);
   }
 
+  let purgedModules: Map<string, Set<string>> = null;
   // remove unused component imports
   if (getBooleanPropertyValue(Constants.ENV_MANUAL_TREESHAKING)) {
     // TODO remove this in a couple versions
@@ -75,9 +87,8 @@ export function doOptimizations(context: BuildContext, dependencyMap: Map<string
       // due to how the angular compiler works in angular 4, we need to check if
       modifiedMap = checkIfProviderIsUsedInSrc(context, modifiedMap);
       const results = calculateUnusedComponents(modifiedMap);
+      purgedModules = results.purgedModules;
       purgeUnusedImports(context, results.purgedModules);
-      results.purgedModules.forEach((set: Set<string>, path: string) => {
-      });
       updateIonicComponentsUsed(context, results.updatedDependencyMap);
     }
   }
@@ -88,7 +99,11 @@ export function doOptimizations(context: BuildContext, dependencyMap: Map<string
     Logger.debug('Modified Dependency Map End');
   }
 
-  return modifiedMap;
+
+  return {
+    purgedModules: purgedModules,
+    updatedDependencyMap: modifiedMap
+  };
 }
 
 export function updateIonicComponentsUsed(context: BuildContext, dependencyMap: Map<string, Set<string>>) {
@@ -160,6 +175,7 @@ function purgeUnusedImports(context: BuildContext, purgeDependencyMap: Map<strin
   attemptToPurgeUnusedEntryComponents(context, purgeDependencyMap, getStringPropertyValue(Constants.ENV_POPOVER_COMPONENT_PATH), getStringPropertyValue(Constants.ENV_POPOVER_COMPONENT_FACTORY_PATH));
   attemptToPurgeUnusedEntryComponents(context, purgeDependencyMap, getStringPropertyValue(Constants.ENV_TOAST_COMPONENT_PATH), getStringPropertyValue(Constants.ENV_TOAST_COMPONENT_FACTORY_PATH));
   attemptToPurgeUnusedEntryComponents(context, purgeDependencyMap, getStringPropertyValue(Constants.ENV_SELECT_POPOVER_COMPONENT_PATH), getStringPropertyValue(Constants.ENV_SELECT_POPOVER_COMPONENT_FACTORY_PATH));
+  */
 }
 
 function attemptToPurgeUnusedProvider(context: BuildContext, dependencyMap: Map<string, Set<string>>, providerPath: string, providerClassName: string) {
@@ -206,3 +222,8 @@ const taskInfo: TaskInfo = {
   packageConfig: 'ionic_dependency_tree',
   defaultConfigFile: 'optimization.config'
 };
+
+interface OptimizationResults {
+  purgedModules: string[];
+  includedModules: string[];
+}

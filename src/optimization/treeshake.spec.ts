@@ -2031,4 +2031,63 @@ export var AppModuleNgFactory = new import0.NgModuleFactory(AppModuleInjector, i
       expect(updatedContent.indexOf(`/*${purgeIfResultsTwo[0]}*/`)).toBeGreaterThanOrEqual(0);
     });
   });
+
+  describe('purgeModuleFromFesm', () => {
+    it('should purge the fesm without the module content', () => {
+      const fesmContent =
+`
+Some content
+
+/* start of module /Users/dan/Dev/ionic/dist/ionic-angular/es5-fesm/gestures/gesture-config.js */
+var __extends$75 = (undefined && undefined.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b)
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+/**
+ * @hidden
+ * This class overrides the default Angular gesture config.
+ */
+var IonicGestureConfig = (function (_super) {
+    __extends$75(IonicGestureConfig, _super);
+    function IonicGestureConfig() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    /**
+     * @param {?} element
+     * @return {?}
+     */
+    IonicGestureConfig.prototype.buildHammer = function (element) {
+        var /** @type {?} */ mc = new ((window)).Hammer(element);
+        for (var /** @type {?} */ eventName in this.overrides) {
+            mc.get(eventName).set(this.overrides[eventName]);
+        }
+        return mc;
+    };
+    return IonicGestureConfig;
+}(HammerGestureConfig));
+IonicGestureConfig.decorators = [
+    { type: Injectable },
+];
+/**
+ * @nocollapse
+ */
+IonicGestureConfig.ctorParameters = function () { return []; };
+
+/* end of module /Users/dan/Dev/ionic/dist/ionic-angular/es5-fesm/gestures/gesture-config.js */
+
+
+additional content
+`;
+
+      const modulePath = '/Users/dan/Dev/ionic/dist/ionic-angular/es5-fesm/gestures/gesture-config.js';
+
+      treeshake.purgeModuleFromFesm(fesmContent, modulePath);
+    });
+  });
 });

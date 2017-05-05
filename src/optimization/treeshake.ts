@@ -47,7 +47,7 @@ function requiredModule(modulePath: string) {
   const appModule = changeExtension(getStringPropertyValue(Constants.ENV_APP_NG_MODULE_PATH), '.js');
   const appModuleNgFactory = getAppModuleNgFactoryPath();
   const moduleFile = getIonicModuleFilePath();
-  const menuTypes = join(dirname(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_ENTRY_POINT)), 'components', 'menu', 'menu-types.js');
+  const menuTypes = join(dirname(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_ENTRY_POINT)), 'es5', 'components', 'menu', 'menu-types.js');
   return modulePath === mainJsFile
         || modulePath === mainTsFile
         || modulePath === appModule
@@ -60,7 +60,7 @@ function filterMap(dependencyMap: Map<string, Set<string>>) {
   const filteredMap = new Map<string, Set<string>>();
   dependencyMap.forEach((importeeSet: Set<string>, modulePath: string) => {
     if (isIonicComponentOrAppSource(modulePath) || modulePath === getIonicModuleFilePath()) {
-      importeeSet.delete(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_ENTRY_POINT));
+      importeeSet.delete(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_ENTRY_POINT));
       filteredMap.set(modulePath, importeeSet);
     }
   });
@@ -188,7 +188,7 @@ function processImportTreeForProviders(dependencyMap: Map<string, Set<string>>, 
 
 export function isIonicComponentOrAppSource(modulePath: string) {
   // for now, just use a simple filter of if a file is in ionic-angular/components
-  const ionicAngularComponentDir = join(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_DIR), 'components');
+  const ionicAngularComponentDir = join(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_DIR), 'es5', 'components');
   const srcDir = getStringPropertyValue(Constants.ENV_VAR_SRC_DIR);
   return modulePath.indexOf(ionicAngularComponentDir) >= 0 || modulePath.indexOf(srcDir) >= 0;
 }
@@ -354,7 +354,7 @@ export function generateIonicModulePurgeProviderRegex(className: string) {
 }
 
 export function getIonicModuleFilePath() {
-  const entryPoint = getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_ENTRY_POINT);
+  const entryPoint = getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_ENTRY_POINT);
   return join(dirname(entryPoint), 'module.js');
 }
 
@@ -422,4 +422,14 @@ export function checkIfProviderIsUsedInSrc(context: BuildContext, dependencyMap:
     });
   });
   return dependencyMap;
+}
+
+export function purgeModuleFromFesm(fesmContent: string, modulePathToPurge: string) {
+  const regex = getModuleFromFesmRegex(modulePathToPurge);
+  const results = regex.exec(fesmContent);
+  console.log('results: ', results);
+}
+
+export function getModuleFromFesmRegex(modulePath: string) {
+  return new RegExp(`\\/\\*.*?start of module.*?${modulePath}.*?\\*\\/[\\s\\S\\n]*?\\/\\*.*?end of module.*?${modulePath}.*?\\*\\/`, `gm`);
 }

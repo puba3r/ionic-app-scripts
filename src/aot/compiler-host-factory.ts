@@ -4,9 +4,9 @@ import { getInstance as getFileSystemInstance } from '../util/hybrid-file-system
 
 let instance: NgcCompilerHost = null;
 
-export function getInstance(options: CompilerOptions) {
+export function getInstance(options: CompilerOptions, useFesm: boolean) {
   if (!instance) {
-    instance = new NgcCompilerHost(options, getFileSystemInstance());
+    instance = new NgcCompilerHost(options, getFileSystemInstance(), true, useFesm);
   }
   return instance;
 }
