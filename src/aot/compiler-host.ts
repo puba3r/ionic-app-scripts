@@ -1,6 +1,5 @@
 import { CancellationToken, CompilerHost, CompilerOptions, createCompilerHost, ScriptTarget, SourceFile } from 'typescript';
 
-import * as Constants from '../util/constants';
 import { getIonicAngularPackageJsonFilePath } from '../util/helpers';
 import { VirtualFileSystem } from '../util/interfaces';
 import { getTypescriptSourceFile } from '../util/typescript-utils';
@@ -28,7 +27,6 @@ export class NgcCompilerHost implements CompilerHost {
   }
 
   readFile(filePath: string): string {
-    //console.log('filePath: ', filePath);
     let fileContent = this.fileSystem.getFileContent(filePath);
     if (!fileContent) {
       fileContent = this.diskCompilerHost.readFile(filePath);
@@ -41,13 +39,11 @@ export class NgcCompilerHost implements CompilerHost {
     // read the file and convert the typings and module fields
     // to point to the fesm
     if (this.useFesm && filePath === getIonicAngularPackageJsonFilePath()) {
-      console.log('fileContent: ', fileContent);
       const packageJson = JSON.parse(fileContent);
       packageJson.module = packageJson['es5-fesm'];
       packageJson.types = packageJson['es5-fesm-types'];
-      fileContent = JSON.stringify(packageJson);
+      fileContent = JSON.stringify(packageJson, null, 2);
     }
-
     return fileContent;
   }
 

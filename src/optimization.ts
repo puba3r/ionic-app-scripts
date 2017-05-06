@@ -14,11 +14,13 @@ import { addPureAnnotation, purgeStaticCtorFields, purgeStaticFieldDecorators, p
 import { calculateUnusedComponents,
         checkIfProviderIsUsedInSrc,
         getIonicModuleFilePath,
+       purgeComponentNgFactoryImportAndUsage,
+        purgeModuleFromFesm,
+        purgeProviderControllerImportAndUsage,
+        purgeProviderClassNameFromIonicModuleForRoot,
         purgeUnusedImportsAndExportsFromModuleFile,
         purgeUnusedExportsFromIndexFile,
-        purgeComponentNgFactoryImportAndUsage,
-        purgeProviderControllerImportAndUsage,
-        purgeProviderClassNameFromIonicModuleForRoot
+
 } from './optimization/treeshake';
 
 export function optimization(context: BuildContext, configFile: string) {
@@ -52,12 +54,32 @@ function optimizationWorker(context: BuildContext, configFile: string): Promise<
     }).then((treeShakeResults: TreeShakeCalcResults) => {
       response = treeShakeResults;
       // purge all ionic-angular files from the cache
-      const ionicAngularFiles = context.fileCache.getAll().filter(file => file.path.startsWith(context.ionicAngularDir));
-      ionicAngularFiles.forEach(file => context.fileCache.remove(file.path));
+      purgeFilesFromCache(context);
       // read the fesm
       return readAndCacheFile(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_ENTRY_POINT));
     }).then((fesmContent: string) => {
-      console.log('fesm: ', fesmContent);
+      let magicString = new MagicString(fesmContent);
+      if (response.purgedModules) {
+        response.purgedModules.forEach((set: Set<string>, modulePath: string) => {
+          magicString = purgeModuleFromFesm(fesmContent, modulePath, magicString);
+        });
+      }
+      const updatedFesm = magicString.toString();
+      if (updatedFesm === fesmContent) {
+        console.log('no modules purged from fesm');
+      } else {
+        console.log('the two fesms are different');
+      }
+      context.fileCache.set(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_ENTRY_POINT), { path: getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_ENTRY_POINT), content: updatedFesm});
+    }).then(() => {
+      const compiler = new AotCompiler(context, { entryPoint: process.env[Constants.ENV_APP_ENTRY_POINT],
+                                            rootDir: context.rootDir,
+                                            tsConfigPath: process.env[Constants.ENV_TS_CONFIG],
+                                            appNgModuleClass: process.env[Constants.ENV_APP_NG_MODULE_CLASS],
+                                            appNgModulePath: process.env[Constants.ENV_APP_NG_MODULE_PATH],
+                                            useFesm: true
+                                          });
+      return compiler.compile();
     });
   } else {
     return Promise.resolve();
@@ -87,6 +109,8 @@ export function doOptimizations(context: BuildContext, dependencyMap: Map<string
       // due to how the angular compiler works in angular 4, we need to check if
       modifiedMap = checkIfProviderIsUsedInSrc(context, modifiedMap);
       const results = calculateUnusedComponents(modifiedMap);
+      console.log('results.purged: ', results.purgedModules.size);
+      console.log('results.notPurged: ', results.updatedDependencyMap.size);
       purgedModules = results.purgedModules;
       purgeUnusedImports(context, results.purgedModules);
       updateIonicComponentsUsed(context, results.updatedDependencyMap);
@@ -108,7 +132,17 @@ export function doOptimizations(context: BuildContext, dependencyMap: Map<string
 
 export function updateIonicComponentsUsed(context: BuildContext, dependencyMap: Map<string, Set<string>>) {
   console.log('updateIonicComponentsUsed');
+}
 
+function purgeFilesFromCache(context: BuildContext) {
+  const filesToRemove = context.fileCache.getAll()
+    /*.filter(file => file.path.startsWith(context.ionicAngularDir)
+            || file.path.endsWith('.ngsummary.json')
+            || file.path.endsWith('.ngfactory.ts')
+            || file.path.endsWith('.ngfactory.js'));*/;
+  filesToRemove.forEach(file => context.fileCache.remove(file.path));
+
+  context.fileCache.getAll().forEach(file => console.log(file.path));
 }
 
 function optimizationEnabled() {

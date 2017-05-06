@@ -1,4 +1,7 @@
 import { join, relative } from 'path';
+
+import * as MagicString from 'magic-string';
+
 import * as treeshake from './treeshake';
 import * as Constants from '../util/constants';
 import * as helpers from '../util/helpers';
@@ -14,7 +17,7 @@ const nodeModulesDir = join(baseDir, 'node_modules');
 const ionicAngularDir = join(nodeModulesDir, 'ionic-angular');
 const ionicAngularEntryPoint = join(ionicAngularDir, 'index.js');
 const ionicAngularModuleFile = join(ionicAngularDir, 'module.js');
-const componentDir = join(ionicAngularDir, 'components');
+const componentDir = join(ionicAngularDir, 'components', 'es5');
 
 describe('treeshake', () => {
 
@@ -27,27 +30,27 @@ describe('treeshake', () => {
     env[Constants.ENV_APP_ENTRY_POINT] = main;
     env[Constants.ENV_APP_NG_MODULE_PATH] = appModule;
     env[Constants.ENV_NG_MODULE_FILE_NAME_SUFFIX] = '.module.ts';
-    env[Constants.ENV_ACTION_SHEET_COMPONENT_FACTORY_PATH] = join(env[Constants.ENV_VAR_IONIC_ANGULAR_DIR], 'components', 'action-sheet', 'action-sheet-component.ngfactory.js');
-    env[Constants.ENV_ACTION_SHEET_CONTROLLER_PATH] = join(env[Constants.ENV_VAR_IONIC_ANGULAR_DIR], 'components', 'action-sheet', 'action-sheet-controller.js');
-    env[Constants.ENV_ACTION_SHEET_VIEW_CONTROLLER_PATH] = join(env[Constants.ENV_VAR_IONIC_ANGULAR_DIR], 'components', 'action-sheet', 'action-sheet.js');
-    env[Constants.ENV_ALERT_COMPONENT_FACTORY_PATH] = join(env[Constants.ENV_VAR_IONIC_ANGULAR_DIR], 'components', 'alert', 'alert-component.ngfactory.js');
-    env[Constants.ENV_ALERT_CONTROLLER_PATH] = join(env[Constants.ENV_VAR_IONIC_ANGULAR_DIR], 'components', 'alert', 'alert-controller.js');
-    env[Constants.ENV_ALERT_VIEW_CONTROLLER_PATH] = join(env[Constants.ENV_VAR_IONIC_ANGULAR_DIR], 'components', 'alert', 'alert.js');
-    env[Constants.ENV_LOADING_COMPONENT_FACTORY_PATH] = join(env[Constants.ENV_VAR_IONIC_ANGULAR_DIR], 'components', 'loading', 'loading-component.ngfactory.js');
-    env[Constants.ENV_LOADING_CONTROLLER_PATH] = join(env[Constants.ENV_VAR_IONIC_ANGULAR_DIR], 'components', 'loading', 'loading-controller.js');
-    env[Constants.ENV_LOADING_VIEW_CONTROLLER_PATH] = join(env[Constants.ENV_VAR_IONIC_ANGULAR_DIR], 'components', 'loading', 'loading.js');
-    env[Constants.ENV_MODAL_COMPONENT_FACTORY_PATH] = join(env[Constants.ENV_VAR_IONIC_ANGULAR_DIR], 'components', 'modal', 'modal-component.ngfactory.js');
-    env[Constants.ENV_MODAL_CONTROLLER_PATH] = join(env[Constants.ENV_VAR_IONIC_ANGULAR_DIR], 'components', 'modal', 'modal-controller.js');
-    env[Constants.ENV_MODAL_VIEW_CONTROLLER_PATH] = join(env[Constants.ENV_VAR_IONIC_ANGULAR_DIR], 'components', 'modal', 'modal.js');
-    env[Constants.ENV_PICKER_COMPONENT_FACTORY_PATH] = join(env[Constants.ENV_VAR_IONIC_ANGULAR_DIR], 'components', 'picker', 'picker-component.ngfactory.js');
-    env[Constants.ENV_PICKER_CONTROLLER_PATH] = join(env[Constants.ENV_VAR_IONIC_ANGULAR_DIR], 'components', 'picker', 'picker-controller.js');
-    env[Constants.ENV_PICKER_VIEW_CONTROLLER_PATH] = join(env[Constants.ENV_VAR_IONIC_ANGULAR_DIR], 'components', 'picker', 'picker.js');
-    env[Constants.ENV_POPOVER_COMPONENT_FACTORY_PATH] = join(env[Constants.ENV_VAR_IONIC_ANGULAR_DIR], 'components', 'popover', 'popover-component.ngfactory.js');
-    env[Constants.ENV_POPOVER_CONTROLLER_PATH] = join(env[Constants.ENV_VAR_IONIC_ANGULAR_DIR], 'components', 'popover', 'popover-controller.js');
-    env[Constants.ENV_POPOVER_VIEW_CONTROLLER_PATH] = join(env[Constants.ENV_VAR_IONIC_ANGULAR_DIR], 'components', 'popover', 'popover.js');
-    env[Constants.ENV_TOAST_COMPONENT_FACTORY_PATH] = join(env[Constants.ENV_VAR_IONIC_ANGULAR_DIR], 'components', 'toast', 'toast-component.ngfactory.js');
-    env[Constants.ENV_TOAST_CONTROLLER_PATH] = join(env[Constants.ENV_VAR_IONIC_ANGULAR_DIR], 'components', 'toast', 'toast-controller.js');
-    env[Constants.ENV_TOAST_VIEW_CONTROLLER_PATH] = join(env[Constants.ENV_VAR_IONIC_ANGULAR_DIR], 'components', 'toast', 'toast.js');
+    env[Constants.ENV_ACTION_SHEET_COMPONENT_FACTORY_PATH] = join(componentDir, 'action-sheet', 'action-sheet-component.ngfactory.js');
+    env[Constants.ENV_ACTION_SHEET_CONTROLLER_PATH] = join(componentDir, 'action-sheet', 'action-sheet-controller.js');
+    env[Constants.ENV_ACTION_SHEET_VIEW_CONTROLLER_PATH] = join(componentDir, 'action-sheet', 'action-sheet.js');
+    env[Constants.ENV_ALERT_COMPONENT_FACTORY_PATH] = join(componentDir, 'alert', 'alert-component.ngfactory.js');
+    env[Constants.ENV_ALERT_CONTROLLER_PATH] = join(componentDir, 'alert', 'alert-controller.js');
+    env[Constants.ENV_ALERT_VIEW_CONTROLLER_PATH] = join(componentDir, 'alert', 'alert.js');
+    env[Constants.ENV_LOADING_COMPONENT_FACTORY_PATH] = join(componentDir, 'loading', 'loading-component.ngfactory.js');
+    env[Constants.ENV_LOADING_CONTROLLER_PATH] = join(componentDir, 'loading', 'loading-controller.js');
+    env[Constants.ENV_LOADING_VIEW_CONTROLLER_PATH] = join(componentDir, 'loading', 'loading.js');
+    env[Constants.ENV_MODAL_COMPONENT_FACTORY_PATH] = join(componentDir, 'modal', 'modal-component.ngfactory.js');
+    env[Constants.ENV_MODAL_CONTROLLER_PATH] = join(componentDir, 'modal', 'modal-controller.js');
+    env[Constants.ENV_MODAL_VIEW_CONTROLLER_PATH] = join(componentDir, 'modal', 'modal.js');
+    env[Constants.ENV_PICKER_COMPONENT_FACTORY_PATH] = join(componentDir, 'picker', 'picker-component.ngfactory.js');
+    env[Constants.ENV_PICKER_CONTROLLER_PATH] = join(componentDir, 'picker', 'picker-controller.js');
+    env[Constants.ENV_PICKER_VIEW_CONTROLLER_PATH] = join(componentDir, 'picker', 'picker.js');
+    env[Constants.ENV_POPOVER_COMPONENT_FACTORY_PATH] = join(componentDir, 'popover', 'popover-component.ngfactory.js');
+    env[Constants.ENV_POPOVER_CONTROLLER_PATH] = join(componentDir, 'popover', 'popover-controller.js');
+    env[Constants.ENV_POPOVER_VIEW_CONTROLLER_PATH] = join(componentDir, 'popover', 'popover.js');
+    env[Constants.ENV_TOAST_COMPONENT_FACTORY_PATH] = join(componentDir, 'toast', 'toast-component.ngfactory.js');
+    env[Constants.ENV_TOAST_CONTROLLER_PATH] = join(componentDir, 'toast', 'toast-controller.js');
+    env[Constants.ENV_TOAST_VIEW_CONTROLLER_PATH] = join(componentDir, 'toast', 'toast.js');
 
     process.env = env;
 
@@ -2084,10 +2087,13 @@ IonicGestureConfig.ctorParameters = function () { return []; };
 
 additional content
 `;
+      let magicString = new MagicString(fesmContent);
 
       const modulePath = '/Users/dan/Dev/ionic/dist/ionic-angular/es5-fesm/gestures/gesture-config.js';
 
-      treeshake.purgeModuleFromFesm(fesmContent, modulePath);
+      const result = treeshake.purgeModuleFromFesm(fesmContent, modulePath, magicString);
+      console.log('taco');
+      console.log(result.toString());
     });
   });
 });

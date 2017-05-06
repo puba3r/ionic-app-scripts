@@ -2,7 +2,7 @@ import { dirname, extname, join, relative } from 'path';
 import { Logger } from '../logger/logger';
 import * as Constants from '../util/constants';
 import { changeExtension, convertFilePathToNgFactoryPath, escapeStringForRegex, getStringPropertyValue, toUnixPath } from '../util/helpers';
-import { BuildContext, TreeShakeCalcResults } from '../util/interfaces';
+import { BuildContext, MagicString, TreeShakeCalcResults } from '../util/interfaces';
 import { findNodes, getTypescriptSourceFile, } from '../util/typescript-utils';
 
 import {
@@ -47,7 +47,7 @@ function requiredModule(modulePath: string) {
   const appModule = changeExtension(getStringPropertyValue(Constants.ENV_APP_NG_MODULE_PATH), '.js');
   const appModuleNgFactory = getAppModuleNgFactoryPath();
   const moduleFile = getIonicModuleFilePath();
-  const menuTypes = join(dirname(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_ENTRY_POINT)), 'es5', 'components', 'menu', 'menu-types.js');
+  const menuTypes = join(dirname(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_ENTRY_POINT)), 'components', 'menu', 'menu-types.js');
   return modulePath === mainJsFile
         || modulePath === mainTsFile
         || modulePath === appModule
@@ -424,12 +424,19 @@ export function checkIfProviderIsUsedInSrc(context: BuildContext, dependencyMap:
   return dependencyMap;
 }
 
-export function purgeModuleFromFesm(fesmContent: string, modulePathToPurge: string) {
+export function purgeModuleFromFesm(originalFesmContent: string, modulePathToPurge: string, magicString: MagicString) {
   const regex = getModuleFromFesmRegex(modulePathToPurge);
-  const results = regex.exec(fesmContent);
-  console.log('results: ', results);
+  const results = regex.exec(originalFesmContent);
+  if (results) {
+    const index = results.index;
+    const length = results[0].length;
+    magicString.overwrite(index, index + length, '');
+  }
+  return magicString;
 }
 
 export function getModuleFromFesmRegex(modulePath: string) {
+  const directory = dirname(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_ENTRY_POINT));
+  modulePath = relative(directory, modulePath);
   return new RegExp(`\\/\\*.*?start of module.*?${modulePath}.*?\\*\\/[\\s\\S\\n]*?\\/\\*.*?end of module.*?${modulePath}.*?\\*\\/`, `gm`);
 }
