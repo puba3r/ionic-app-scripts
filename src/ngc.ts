@@ -24,7 +24,7 @@ export function ngcWorker(context: BuildContext, configFile: string): Promise<vo
                                             tsConfigPath: process.env[Constants.ENV_TS_CONFIG],
                                             appNgModuleClass: process.env[Constants.ENV_APP_NG_MODULE_CLASS],
                                             appNgModulePath: process.env[Constants.ENV_APP_NG_MODULE_PATH],
-                                            useFesm: false
+                                            forOptimization: true
                                           });
   return compiler.compile();
 }

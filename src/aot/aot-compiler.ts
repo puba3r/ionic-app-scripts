@@ -39,7 +39,7 @@ export class AotCompiler {
     });
 
     this.fileSystem = getHybridFileSystem();
-    this.compilerHost = getInstance(this.tsConfig.parsed.options, options.useFesm);
+    this.compilerHost = getInstance(this.tsConfig.parsed.options, options.forOptimization);
     this.program = createProgram(this.tsConfig.parsed.fileNames, this.tsConfig.parsed.options, this.compilerHost);
   }
 
@@ -171,7 +171,7 @@ export interface AotOptions {
   entryPoint: string;
   appNgModulePath: string;
   appNgModuleClass: string;
-  useFesm: boolean;
+  forOptimization: boolean;
 }
 
 export function getNgcConfig(context: BuildContext, tsConfigPath?: string): ParsedTsConfig {

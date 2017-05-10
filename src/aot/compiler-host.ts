@@ -13,9 +13,10 @@ export class NgcCompilerHost implements CompilerHost {
   private sourceFileMap: Map<string, SourceFile>;
   private diskCompilerHost: CompilerHost;
 
-  constructor(private options: CompilerOptions, private fileSystem: VirtualFileSystem, private setParentNodes = true, private useFesm: boolean = false) {
+  constructor(private options: CompilerOptions, private fileSystem: VirtualFileSystem, private setParentNodes = true, private forOptimization: boolean = false) {
     this.diskCompilerHost = createCompilerHost(this.options, this.setParentNodes);
     this.sourceFileMap = new Map<string, SourceFile>();
+    console.log('this.forOptimization: ', forOptimization);
   }
 
   fileExists(filePath: string): boolean {
@@ -38,10 +39,10 @@ export class NgcCompilerHost implements CompilerHost {
     // if we're using the fesm and the path matches,
     // read the file and convert the typings and module fields
     // to point to the fesm
-    if (this.useFesm && filePath === getIonicAngularPackageJsonFilePath()) {
+    if (this.forOptimization && filePath === getIonicAngularPackageJsonFilePath()) {
       const packageJson = JSON.parse(fileContent);
-      packageJson.module = packageJson['es5-fesm'];
-      packageJson.types = packageJson['es5-fesm-types'];
+      packageJson.module = packageJson['es5'];
+      packageJson.types = packageJson['es5-types'];
       fileContent = JSON.stringify(packageJson, null, 2);
     }
     return fileContent;

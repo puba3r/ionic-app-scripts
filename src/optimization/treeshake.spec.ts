@@ -17,7 +17,7 @@ const nodeModulesDir = join(baseDir, 'node_modules');
 const ionicAngularDir = join(nodeModulesDir, 'ionic-angular');
 const ionicAngularEntryPoint = join(ionicAngularDir, 'index.js');
 const ionicAngularModuleFile = join(ionicAngularDir, 'module.js');
-const componentDir = join(ionicAngularDir, 'components', 'es5');
+let componentDir: string = null;
 
 describe('treeshake', () => {
 
@@ -26,6 +26,7 @@ describe('treeshake', () => {
     let env: any = { };
     env[Constants.ENV_VAR_IONIC_ANGULAR_DIR] = ionicAngularDir;
     env[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_ENTRY_POINT] = ionicAngularEntryPoint;
+    let componentDir = helpers.getIonicAngularOptimizationComponentsDir();
     env[Constants.ENV_VAR_SRC_DIR] = srcDir;
     env[Constants.ENV_APP_ENTRY_POINT] = main;
     env[Constants.ENV_APP_NG_MODULE_PATH] = appModule;
@@ -2092,7 +2093,6 @@ additional content
       const modulePath = '/Users/dan/Dev/ionic/dist/ionic-angular/es5-fesm/gestures/gesture-config.js';
 
       const result = treeshake.purgeModuleFromFesm(fesmContent, modulePath, magicString);
-      console.log('taco');
       console.log(result.toString());
     });
   });

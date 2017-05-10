@@ -1,4 +1,4 @@
-import { join } from 'path';
+import { dirname, join } from 'path';
 import * as Constants from '../util/constants';
 import { getParsedDeepLinkConfig, getStringPropertyValue } from '../util/helpers';
 import { BuildContext , DeepLinkConfigEntry} from '../util/interfaces';
@@ -9,7 +9,7 @@ import { WatchMemorySystem } from './watch-memory-system';
 import * as ContextElementDependency from 'webpack/lib/dependencies/ContextElementDependency';
 
 export class IonicEnvironmentPlugin {
-  constructor(private context: BuildContext) {
+  constructor(private context: BuildContext, private isOptimization: boolean) {
   }
 
   apply(compiler: any) {
@@ -22,11 +22,23 @@ export class IonicEnvironmentPlugin {
 
         const deepLinkConfig = getParsedDeepLinkConfig();
         const webpackDeepLinkModuleDictionary = convertDeepLinkConfigToWebpackFormat(deepLinkConfig);
-        const ionicAngularDir = getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_DIR);
+        const ionicAngularDir = dirname(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_ENTRY_POINT));
+        const fesmDir = dirname(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_ENTRY_POINT));
         const ngModuleLoaderDirectory = join(ionicAngularDir, 'util');
-        if (!result.resource.endsWith(ngModuleLoaderDirectory)) {
-          return callback(null, result);
+
+        if (this.isOptimization) {
+          if (!result.resource.endsWith(ngModuleLoaderDirectory)) {
+            console.log('returning for: ', result.resource);
+            return callback(null, result);
+          }
+        } else {
+          if (!result.resource.endsWith(fesmDir)) {
+            console.log('returning for: ', result.resource);
+            return callback(null, result);
+          }
         }
+
+        console.log('Did not return for: ', result.resource);
 
         result.resource = this.context.srcDir;
         result.recursive = true;

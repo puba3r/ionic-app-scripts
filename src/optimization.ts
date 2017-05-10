@@ -1,4 +1,4 @@
-import { basename, extname } from 'path';
+import { basename, dirname, extname, join, relative } from 'path';
 
 import * as MagicString from 'magic-string';
 
@@ -7,7 +7,15 @@ import { Logger } from './logger/logger';
 import { fillConfigDefaults, getUserConfigFile, replacePathVars } from './util/config';
 import * as Constants from './util/constants';
 import { BuildError } from './util/errors';
-import { changeExtension, getBooleanPropertyValue, getStringPropertyValue, printDependencyMap, readAndCacheFile, webpackStatsToDependencyMap } from './util/helpers';
+import { changeExtension,
+        getBooleanPropertyValue,
+        getIonicAngularComponentsDir,
+        getIonicAngularOptimizationComponentsDir,
+        getStringPropertyValue,
+        printDependencyMap,
+        readAndCacheFile,
+        webpackStatsToDependencyMap
+} from './util/helpers';
 import { BuildContext, TaskInfo, TreeShakeCalcResults } from './util/interfaces';
 import { runWebpackFullBuild, WebpackConfig } from './webpack';
 import { addPureAnnotation, purgeStaticCtorFields, purgeStaticFieldDecorators, purgeTranspiledDecorators } from './optimization/decorators';
@@ -50,13 +58,15 @@ function optimizationWorker(context: BuildContext, configFile: string): Promise<
 
       purgeGeneratedFiles(context, webpackConfig.output.filename);
     }).then(() => {
+      return readAndCacheFile(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_ENTRY_POINT));
+    }).then(() => {
       return doOptimizations(context, dependencyMap);
     }).then((treeShakeResults: TreeShakeCalcResults) => {
       response = treeShakeResults;
       // purge all ionic-angular files from the cache
       purgeFilesFromCache(context);
       // read the fesm
-      return readAndCacheFile(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_ENTRY_POINT));
+      return context.fileCache.get(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_ENTRY_POINT)).content;
     }).then((fesmContent: string) => {
       let magicString = new MagicString(fesmContent);
       if (response.purgedModules) {
@@ -72,12 +82,13 @@ function optimizationWorker(context: BuildContext, configFile: string): Promise<
       }
       context.fileCache.set(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_ENTRY_POINT), { path: getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_ENTRY_POINT), content: updatedFesm});
     }).then(() => {
+      console.log('Running AOT again');
       const compiler = new AotCompiler(context, { entryPoint: process.env[Constants.ENV_APP_ENTRY_POINT],
                                             rootDir: context.rootDir,
                                             tsConfigPath: process.env[Constants.ENV_TS_CONFIG],
                                             appNgModuleClass: process.env[Constants.ENV_APP_NG_MODULE_CLASS],
                                             appNgModulePath: process.env[Constants.ENV_APP_NG_MODULE_PATH],
-                                            useFesm: true
+                                            forOptimization: false
                                           });
       return compiler.compile();
     });
@@ -131,18 +142,28 @@ export function doOptimizations(context: BuildContext, dependencyMap: Map<string
 }
 
 export function updateIonicComponentsUsed(context: BuildContext, dependencyMap: Map<string, Set<string>>) {
-  console.log('updateIonicComponentsUsed');
+  const componentsUsed = new Set<string>();
+  dependencyMap.forEach((set: Set<string>, modulePath: string) => {
+    if (modulePath.startsWith(getIonicAngularOptimizationComponentsDir())) {
+      const relativePath = relative(getIonicAngularOptimizationComponentsDir(), modulePath);
+      const componentDir = join(getIonicAngularComponentsDir(), dirname(relativePath));
+      // we want the existing list of components to include any of the content in the new list
+      // the reason for this is some directories do not have sass files, and no sass errors out
+      if (componentDir !== getIonicAngularComponentsDir() && context.includedIonicComponentPaths.has(componentDir)) {
+        componentsUsed.add(componentDir);
+      }
+    }
+  });
+  context.includedIonicComponentPaths = componentsUsed;
 }
 
 function purgeFilesFromCache(context: BuildContext) {
-  const filesToRemove = context.fileCache.getAll()
-    /*.filter(file => file.path.startsWith(context.ionicAngularDir)
-            || file.path.endsWith('.ngsummary.json')
-            || file.path.endsWith('.ngfactory.ts')
-            || file.path.endsWith('.ngfactory.js'));*/;
-  filesToRemove.forEach(file => context.fileCache.remove(file.path));
-
-  context.fileCache.getAll().forEach(file => console.log(file.path));
+  const filesToRemove = context.fileCache.getAll();
+  filesToRemove.forEach(file => {
+    if (file.path !== getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_ENTRY_POINT)) {
+      context.fileCache.remove(file.path);
+    }
+  });
 }
 
 function optimizationEnabled() {

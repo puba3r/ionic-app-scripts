@@ -11,7 +11,8 @@ module.exports = {
   },
 
   resolve: {
-    extensions: ['.js', '.ts']
+    extensions: ['.js', '.ts'],
+    mainFields: ['es5', 'browser', 'module', 'main']
   },
 
   module: {
@@ -28,7 +29,7 @@ module.exports = {
   },
 
   plugins: [
-    ionicWebpackFactory.getIonicEnvironmentPlugin(),
+    ionicWebpackFactory.getIonicEnvironmentPlugin(true),
   ],
 
   // Some libraries import Node modules but don't use them in the browser.

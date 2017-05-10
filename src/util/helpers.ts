@@ -467,3 +467,11 @@ export function isIonic(filePath: string) {
 export function getIonicAngularPackageJsonFilePath() {
   return join(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_DIR), 'package.json');
 }
+
+export function getIonicAngularComponentsDir() {
+  return join(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_DIR), 'components');
+}
+
+export function getIonicAngularOptimizationComponentsDir() {
+  return join(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_DIR), 'es5', 'components');
+}

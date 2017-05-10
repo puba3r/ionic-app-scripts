@@ -230,7 +230,8 @@ function getComponentDirectories(context: BuildContext, moduleDirectories: strin
     return true;
   });
 
-  //console.log('sassDirectories: ', context.includedIonicComponentPaths);
+  console.log('context.includedIonicComponentPaths: ', context.includedIonicComponentPaths);
+
   return sassDirectories.concat(Array.from(context.includedIonicComponentPaths));
 }
 
