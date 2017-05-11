@@ -1,6 +1,7 @@
 import { CancellationToken, CompilerHost, CompilerOptions, createCompilerHost, ScriptTarget, SourceFile } from 'typescript';
 
-import { getIonicAngularPackageJsonFilePath } from '../util/helpers';
+import * as Constants from '../util/constants';
+import { getStringPropertyValue } from '../util/helpers';
 import { VirtualFileSystem } from '../util/interfaces';
 import { getTypescriptSourceFile } from '../util/typescript-utils';
 import { Logger } from '../logger/logger';
@@ -16,7 +17,6 @@ export class NgcCompilerHost implements CompilerHost {
   constructor(private options: CompilerOptions, private fileSystem: VirtualFileSystem, private setParentNodes = true, private forOptimization: boolean = false) {
     this.diskCompilerHost = createCompilerHost(this.options, this.setParentNodes);
     this.sourceFileMap = new Map<string, SourceFile>();
-    console.log('this.forOptimization: ', forOptimization);
   }
 
   fileExists(filePath: string): boolean {
@@ -39,7 +39,7 @@ export class NgcCompilerHost implements CompilerHost {
     // if we're using the fesm and the path matches,
     // read the file and convert the typings and module fields
     // to point to the fesm
-    if (this.forOptimization && filePath === getIonicAngularPackageJsonFilePath()) {
+    if (this.forOptimization && filePath === getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_PACKAGE_JSON)) {
       const packageJson = JSON.parse(fileContent);
       packageJson.module = packageJson['es5'];
       packageJson.types = packageJson['es5-types'];

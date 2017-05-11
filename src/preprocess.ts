@@ -5,7 +5,7 @@ import { Logger } from './logger/logger';
 import * as Constants from './util/constants';
 import { BuildError } from './util/errors';
 import { globAll, GlobResult } from './util/glob-util';
-import { getBooleanPropertyValue, getIonicAngularComponentsDir } from './util/helpers';
+import { getBooleanPropertyValue, getStringPropertyValue } from './util/helpers';
 import { BuildContext, ChangedFile } from './util/interfaces';
 import { optimization } from './optimization';
 import { deepLinking, deepLinkingUpdate } from './deep-linking';
@@ -71,7 +71,8 @@ export function preprocessUpdate(changedFiles: ChangedFile[], context: BuildCont
 }
 
 export function lookUpDefaultIonicComponentPaths(context: BuildContext) {
-  return globAll([join(getIonicAngularComponentsDir(), '**', '*.scss')]).then((results: GlobResult[]) => {
+  const componentsDir = getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_COMPONENTS_DIR);
+  return globAll([join(componentsDir, '**', '*.scss')]).then((results: GlobResult[]) => {
     const componentPathSet = new Set<string>();
     results.forEach(result => {
       componentPathSet.add(dirname(result.absolutePath));

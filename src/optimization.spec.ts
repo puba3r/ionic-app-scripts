@@ -99,7 +99,7 @@ describe('optimization task', () => {
 
     });
 
-    it('should run manual tree shaking when there is a module.js file in the cache', () => {
+    /*it('should run manual tree shaking when there is a module.js file in the cache', () => {
       const context = {
         fileCache: new FileCache(),
       };
@@ -129,5 +129,6 @@ describe('optimization task', () => {
       expect(treeshake.calculateUnusedComponents).toHaveBeenCalled();
       expect(treeshake.purgeUnusedImportsAndExportsFromModuleFile).toHaveBeenCalled();
     });
+    */
   });
 });

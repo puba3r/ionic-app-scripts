@@ -234,3 +234,20 @@ export interface Packages {
   rollup?: any;
   uglify?: any;
 }
+
+export interface AotMetadata {
+  metadata: any;
+  origins: any;
+}
+
+export interface AotMetadataMetadataNode {
+  decorators: AotMetadataDecoratorNode[];
+}
+
+export interface AotMetadataDecoratorNode {
+  arguments: any[];
+}
+
+export interface NgModuleMetadataNode {
+  name: string;
+}

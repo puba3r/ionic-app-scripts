@@ -1,7 +1,7 @@
 import { dirname, extname, join, relative } from 'path';
 import { Logger } from '../logger/logger';
 import * as Constants from '../util/constants';
-import { changeExtension, convertFilePathToNgFactoryPath, escapeStringForRegex, getIonicAngularOptimizationComponentsDir, getStringPropertyValue, toUnixPath } from '../util/helpers';
+import { changeExtension, convertFilePathToNgFactoryPath, escapeStringForRegex, getStringPropertyValue, toUnixPath } from '../util/helpers';
 import { BuildContext, MagicString, TreeShakeCalcResults } from '../util/interfaces';
 import { findNodes, getTypescriptSourceFile, } from '../util/typescript-utils';
 
@@ -189,7 +189,7 @@ function processImportTreeForProviders(dependencyMap: Map<string, Set<string>>, 
 export function isIonicComponentOrAppSource(modulePath: string) {
   // for now, just use a simple filter of if a file is in ionic-angular/components
 
-  const ionicAngularComponentDir = getIonicAngularOptimizationComponentsDir();
+  const ionicAngularComponentDir = getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR);
   const srcDir = getStringPropertyValue(Constants.ENV_VAR_SRC_DIR);
   return modulePath.indexOf(ionicAngularComponentDir) >= 0 || modulePath.indexOf(srcDir) >= 0;
 }

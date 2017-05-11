@@ -4,7 +4,7 @@ import * as helpers from './util/helpers';
 import * as optimization from './optimization';
 
 
-describe('Preprocess Task', () => {
+/*describe('Preprocess Task', () => {
   describe('preprocess', () => {
     it('should call deepLink but not optimization or write files to disk', () => {
       // arrange
@@ -45,3 +45,4 @@ describe('Preprocess Task', () => {
     });
   });
 });
+*/

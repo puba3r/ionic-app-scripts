@@ -90,6 +90,10 @@ describe('config', () => {
       expect(context.target).toEqual(null);
       expect(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_ENTRY_POINT]).toEqual(join(context.ionicAngularDir, 'es5', 'index.js'));
       expect(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_FESM_ENTRY_POINT]).toEqual(join(context.ionicAngularDir, 'es5-fesm', 'ionic-angular.js'));
+      expect(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_FESM_METADATA]).toEqual(join(context.ionicAngularDir, 'es5-fesm', 'ionic-angular.metadata.json'));
+      expect(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_PACKAGE_JSON]).toEqual(join(context.ionicAngularDir, 'package.json'));
+      expect(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_COMPONENTS_DIR]).toEqual(join(context.ionicAngularDir, 'components'));
+      expect(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR]).toEqual(join(context.ionicAngularDir, 'es5', 'components'));
       expect(fakeConfig[Constants.ENV_VAR_APP_SCRIPTS_DIR]).toEqual(join(__dirname, '..', '..'));
       expect(fakeConfig[Constants.ENV_VAR_GENERATE_SOURCE_MAP]).toEqual('true');
       expect(fakeConfig[Constants.ENV_VAR_SOURCE_MAP_TYPE]).toEqual(Constants.SOURCE_MAP_TYPE_EXPENSIVE);
@@ -117,48 +121,59 @@ describe('config', () => {
       expect(fakeConfig[Constants.ENV_NG_MODULE_FILE_NAME_SUFFIX]).toEqual('.module.ts');
 
       expect(fakeConfig[Constants.ENV_ACTION_SHEET_CONTROLLER_CLASSNAME]).toEqual('ActionSheetController');
-      expect(fakeConfig[Constants.ENV_ACTION_SHEET_CONTROLLER_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'action-sheet', 'action-sheet-controller.js'));
-      expect(fakeConfig[Constants.ENV_ACTION_SHEET_VIEW_CONTROLLER_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'action-sheet', 'action-sheet.js'));
-      expect(fakeConfig[Constants.ENV_ACTION_SHEET_COMPONENT_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'action-sheet', 'action-sheet-component.js'));
-      expect(fakeConfig[Constants.ENV_ACTION_SHEET_COMPONENT_FACTORY_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'action-sheet', 'action-sheet-component.ngfactory.js'));
+      expect(fakeConfig[Constants.ENV_ACTION_SHEET_CONTROLLER_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'action-sheet', 'action-sheet-controller.js'));
+      expect(fakeConfig[Constants.ENV_ACTION_SHEET_VIEW_CONTROLLER_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'action-sheet', 'action-sheet.js'));
+      expect(fakeConfig[Constants.ENV_ACTION_SHEET_COMPONENT_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'action-sheet', 'action-sheet-component.js'));
+      expect(fakeConfig[Constants.ENV_ACTION_SHEET_COMPONENT_FACTORY_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'action-sheet', 'action-sheet-component.ngfactory.js'));
+      expect(fakeConfig[Constants.ENV_ACTION_SHEET_COMPONENT_CLASSNAME]).toEqual('ActionSheetCmp');
 
       expect(fakeConfig[Constants.ENV_ALERT_CONTROLLER_CLASSNAME]).toEqual('AlertController');
-      expect(fakeConfig[Constants.ENV_ALERT_CONTROLLER_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'alert', 'alert-controller.js'));
-      expect(fakeConfig[Constants.ENV_ALERT_VIEW_CONTROLLER_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'alert', 'alert.js'));
-      expect(fakeConfig[Constants.ENV_ALERT_COMPONENT_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'alert', 'alert-component.js'));
-      expect(fakeConfig[Constants.ENV_ALERT_COMPONENT_FACTORY_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'alert', 'alert-component.ngfactory.js'));
+      expect(fakeConfig[Constants.ENV_ALERT_CONTROLLER_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'alert', 'alert-controller.js'));
+      expect(fakeConfig[Constants.ENV_ALERT_VIEW_CONTROLLER_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'alert', 'alert.js'));
+      expect(fakeConfig[Constants.ENV_ALERT_COMPONENT_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'alert', 'alert-component.js'));
+      expect(fakeConfig[Constants.ENV_ALERT_COMPONENT_FACTORY_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'alert', 'alert-component.ngfactory.js'));
+      expect(fakeConfig[Constants.ENV_ALERT_COMPONENT_CLASSNAME]).toEqual('AlertCmp');
 
-      expect(fakeConfig[Constants.ENV_APP_ROOT_COMPONENT_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'app', 'app-root.js'));
+      expect(fakeConfig[Constants.ENV_APP_ROOT_COMPONENT_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'app', 'app-root.js'));
 
       expect(fakeConfig[Constants.ENV_LOADING_CONTROLLER_CLASSNAME]).toEqual('LoadingController');
-      expect(fakeConfig[Constants.ENV_LOADING_CONTROLLER_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'loading', 'loading-controller.js'));
-      expect(fakeConfig[Constants.ENV_LOADING_VIEW_CONTROLLER_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'loading', 'loading.js'));
-      expect(fakeConfig[Constants.ENV_LOADING_COMPONENT_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'loading', 'loading-component.js'));
-      expect(fakeConfig[Constants.ENV_LOADING_COMPONENT_FACTORY_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'loading', 'loading-component.ngfactory.js'));
+      expect(fakeConfig[Constants.ENV_LOADING_CONTROLLER_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'loading', 'loading-controller.js'));
+      expect(fakeConfig[Constants.ENV_LOADING_VIEW_CONTROLLER_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'loading', 'loading.js'));
+      expect(fakeConfig[Constants.ENV_LOADING_COMPONENT_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'loading', 'loading-component.js'));
+      expect(fakeConfig[Constants.ENV_LOADING_COMPONENT_FACTORY_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'loading', 'loading-component.ngfactory.js'));
+      expect(fakeConfig[Constants.ENV_LOADING_COMPONENT_CLASSNAME]).toEqual('LoadingCmp');
 
       expect(fakeConfig[Constants.ENV_MODAL_CONTROLLER_CLASSNAME]).toEqual('ModalController');
-      expect(fakeConfig[Constants.ENV_MODAL_CONTROLLER_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'modal', 'modal-controller.js'));
-      expect(fakeConfig[Constants.ENV_MODAL_VIEW_CONTROLLER_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'modal', 'modal.js'));
-      expect(fakeConfig[Constants.ENV_MODAL_COMPONENT_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'modal', 'modal-component.js'));
-      expect(fakeConfig[Constants.ENV_MODAL_COMPONENT_FACTORY_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'modal', 'modal-component.ngfactory.js'));
+      expect(fakeConfig[Constants.ENV_MODAL_CONTROLLER_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'modal', 'modal-controller.js'));
+      expect(fakeConfig[Constants.ENV_MODAL_VIEW_CONTROLLER_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'modal', 'modal.js'));
+      expect(fakeConfig[Constants.ENV_MODAL_COMPONENT_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'modal', 'modal-component.js'));
+      expect(fakeConfig[Constants.ENV_MODAL_COMPONENT_FACTORY_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'modal', 'modal-component.ngfactory.js'));
+      expect(fakeConfig[Constants.ENV_MODAL_COMPONENT_CLASSNAME]).toEqual('ModalCmp');
 
       expect(fakeConfig[Constants.ENV_PICKER_CONTROLLER_CLASSNAME]).toEqual('PickerController');
-      expect(fakeConfig[Constants.ENV_PICKER_CONTROLLER_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'picker', 'picker-controller.js'));
-      expect(fakeConfig[Constants.ENV_PICKER_VIEW_CONTROLLER_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'picker', 'picker.js'));
-      expect(fakeConfig[Constants.ENV_PICKER_COMPONENT_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'picker', 'picker-component.js'));
-      expect(fakeConfig[Constants.ENV_PICKER_COMPONENT_FACTORY_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'picker', 'picker-component.ngfactory.js'));
+      expect(fakeConfig[Constants.ENV_PICKER_CONTROLLER_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'picker', 'picker-controller.js'));
+      expect(fakeConfig[Constants.ENV_PICKER_VIEW_CONTROLLER_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'picker', 'picker.js'));
+      expect(fakeConfig[Constants.ENV_PICKER_COMPONENT_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'picker', 'picker-component.js'));
+      expect(fakeConfig[Constants.ENV_PICKER_COMPONENT_FACTORY_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'picker', 'picker-component.ngfactory.js'));
+      expect(fakeConfig[Constants.ENV_PICKER_COMPONENT_CLASSNAME]).toEqual('PickerCmp');
 
       expect(fakeConfig[Constants.ENV_POPOVER_CONTROLLER_CLASSNAME]).toEqual('PopoverController');
-      expect(fakeConfig[Constants.ENV_POPOVER_CONTROLLER_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'popover', 'popover-controller.js'));
-      expect(fakeConfig[Constants.ENV_POPOVER_VIEW_CONTROLLER_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'popover', 'popover.js'));
-      expect(fakeConfig[Constants.ENV_POPOVER_COMPONENT_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'popover', 'popover-component.js'));
-      expect(fakeConfig[Constants.ENV_POPOVER_COMPONENT_FACTORY_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'popover', 'popover-component.ngfactory.js'));
+      expect(fakeConfig[Constants.ENV_POPOVER_CONTROLLER_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'popover', 'popover-controller.js'));
+      expect(fakeConfig[Constants.ENV_POPOVER_VIEW_CONTROLLER_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'popover', 'popover.js'));
+      expect(fakeConfig[Constants.ENV_POPOVER_COMPONENT_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'popover', 'popover-component.js'));
+      expect(fakeConfig[Constants.ENV_POPOVER_COMPONENT_FACTORY_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'popover', 'popover-component.ngfactory.js'));
+      expect(fakeConfig[Constants.ENV_POPOVER_COMPONENT_CLASSNAME]).toEqual('PopoverCmp');
 
       expect(fakeConfig[Constants.ENV_TOAST_CONTROLLER_CLASSNAME]).toEqual('ToastController');
-      expect(fakeConfig[Constants.ENV_TOAST_CONTROLLER_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'toast', 'toast-controller.js'));
-      expect(fakeConfig[Constants.ENV_TOAST_VIEW_CONTROLLER_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'toast', 'toast.js'));
-      expect(fakeConfig[Constants.ENV_TOAST_COMPONENT_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'toast', 'toast-component.js'));
-      expect(fakeConfig[Constants.ENV_TOAST_COMPONENT_FACTORY_PATH]).toEqual(join(helpers.getIonicAngularOptimizationComponentsDir(), 'toast', 'toast-component.ngfactory.js'));
+      expect(fakeConfig[Constants.ENV_TOAST_CONTROLLER_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'toast', 'toast-controller.js'));
+      expect(fakeConfig[Constants.ENV_TOAST_VIEW_CONTROLLER_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'toast', 'toast.js'));
+      expect(fakeConfig[Constants.ENV_TOAST_COMPONENT_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'toast', 'toast-component.js'));
+      expect(fakeConfig[Constants.ENV_TOAST_COMPONENT_FACTORY_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'toast', 'toast-component.ngfactory.js'));
+      expect(fakeConfig[Constants.ENV_TOAST_COMPONENT_CLASSNAME]).toEqual('ToastCmp');
+
+      expect(fakeConfig[Constants.ENV_SELECT_POPOVER_CLASSNAME]).toEqual('SelectPopover');
+      expect(fakeConfig[Constants.ENV_SELECT_POPOVER_COMPONENT_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'select', 'select-popover-component.js'));
+      expect(fakeConfig[Constants.ENV_SELECT_POPOVER_COMPONENT_FACTORY_PATH]).toEqual(join(fakeConfig[Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR], 'select', 'select-popover-component.ngfactory.js'));
 
       expect(fakeConfig[Constants.ENV_PARSE_DEEPLINKS]).toBeTruthy();
       expect(fakeConfig[Constants.ENV_PURGE_DECORATORS]).toBeTruthy();

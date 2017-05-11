@@ -3,7 +3,7 @@ import { accessSync, readJSONSync, statSync } from 'fs-extra';
 
 import { Logger } from '../logger/logger';
 import { BuildContext, TaskInfo } from './interfaces';
-import { getBooleanPropertyValue, getIonicAngularOptimizationComponentsDir, objectAssign } from './helpers';
+import { getBooleanPropertyValue, objectAssign } from './helpers';
 import { FileCache } from './file-cache';
 import * as Constants from './constants';
 
@@ -156,6 +156,22 @@ export function generateContext(context?: BuildContext): BuildContext {
   setProcessEnvVar(Constants.ENV_VAR_IONIC_ANGULAR_FESM_ENTRY_POINT, ionicAngularFesmEntryPoint);
   Logger.debug(`ionicAngularFesmEntryPoint set to ${ionicAngularFesmEntryPoint}`);
 
+  const ionicAngularFesmMetaData = resolve(getConfigValue(context, '--ionicAngularFesmMetaData', null, Constants.ENV_VAR_IONIC_ANGULAR_FESM_METADATA, Constants.ENV_VAR_IONIC_ANGULAR_FESM_METADATA.toLowerCase(), join(context.ionicAngularDir, 'es5-fesm', 'ionic-angular.metadata.json')));
+  setProcessEnvVar(Constants.ENV_VAR_IONIC_ANGULAR_FESM_METADATA, ionicAngularFesmMetaData);
+  Logger.debug(`ionicAngularFesmMetaData set to ${ionicAngularFesmMetaData}`);
+
+  const ionicAngularPackageJson = resolve(getConfigValue(context, '--ionicAngularPackageJson', null, Constants.ENV_VAR_IONIC_ANGULAR_PACKAGE_JSON, Constants.ENV_VAR_IONIC_ANGULAR_PACKAGE_JSON.toLowerCase(), join(context.ionicAngularDir, 'package.json')));
+  setProcessEnvVar(Constants.ENV_VAR_IONIC_ANGULAR_PACKAGE_JSON, ionicAngularPackageJson);
+  Logger.debug(`ionicAngularPackageJson set to ${ionicAngularPackageJson}`);
+
+  const ionicAngularComponentsDir = resolve(getConfigValue(context, '--ionicAngularComponentsDir', null, Constants.ENV_VAR_IONIC_ANGULAR_COMPONENTS_DIR, Constants.ENV_VAR_IONIC_ANGULAR_COMPONENTS_DIR.toLowerCase(), join(context.ionicAngularDir, 'components')));
+  setProcessEnvVar(Constants.ENV_VAR_IONIC_ANGULAR_COMPONENTS_DIR, ionicAngularComponentsDir);
+  Logger.debug(`ionicAngularComponentsDir set to ${ionicAngularComponentsDir}`);
+
+  const ionicAngularOptimizationComponentsDir = resolve(getConfigValue(context, '--ionicAngularOptimizationComponentsDir', null, Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR, Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR.toLowerCase(), join(context.ionicAngularDir, 'es5', 'components')));
+  setProcessEnvVar(Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_COMPONENTS_DIR, ionicAngularOptimizationComponentsDir);
+  Logger.debug(`ionicAngularOptimizationComponentsDir set to ${ionicAngularOptimizationComponentsDir}`);
+
   const appScriptsDir = join(__dirname, '..', '..');
   setProcessEnvVar(Constants.ENV_VAR_APP_SCRIPTS_DIR, appScriptsDir);
   Logger.debug(`appScriptsDir set to ${appScriptsDir}`);
@@ -262,53 +278,59 @@ export function generateContext(context?: BuildContext): BuildContext {
 
   /* Provider Path Stuff */
   setProcessEnvVar(Constants.ENV_ACTION_SHEET_CONTROLLER_CLASSNAME, 'ActionSheetController');
-
-  setProcessEnvVar(Constants.ENV_ACTION_SHEET_CONTROLLER_PATH, join(getIonicAngularOptimizationComponentsDir(), 'action-sheet', 'action-sheet-controller.js'));
-  setProcessEnvVar(Constants.ENV_ACTION_SHEET_VIEW_CONTROLLER_PATH, join(getIonicAngularOptimizationComponentsDir(), 'action-sheet', 'action-sheet.js'));
-  setProcessEnvVar(Constants.ENV_ACTION_SHEET_COMPONENT_PATH, join(getIonicAngularOptimizationComponentsDir(), 'action-sheet', 'action-sheet-component.js'));
-  setProcessEnvVar(Constants.ENV_ACTION_SHEET_COMPONENT_FACTORY_PATH, join(getIonicAngularOptimizationComponentsDir(), 'action-sheet', 'action-sheet-component.ngfactory.js'));
+  setProcessEnvVar(Constants.ENV_ACTION_SHEET_CONTROLLER_PATH, join(ionicAngularOptimizationComponentsDir, 'action-sheet', 'action-sheet-controller.js'));
+  setProcessEnvVar(Constants.ENV_ACTION_SHEET_VIEW_CONTROLLER_PATH, join(ionicAngularOptimizationComponentsDir, 'action-sheet', 'action-sheet.js'));
+  setProcessEnvVar(Constants.ENV_ACTION_SHEET_COMPONENT_PATH, join(ionicAngularOptimizationComponentsDir, 'action-sheet', 'action-sheet-component.js'));
+  setProcessEnvVar(Constants.ENV_ACTION_SHEET_COMPONENT_FACTORY_PATH, join(ionicAngularOptimizationComponentsDir, 'action-sheet', 'action-sheet-component.ngfactory.js'));
+  setProcessEnvVar(Constants.ENV_ACTION_SHEET_COMPONENT_CLASSNAME, 'ActionSheetCmp');
 
   setProcessEnvVar(Constants.ENV_ALERT_CONTROLLER_CLASSNAME, 'AlertController');
-  setProcessEnvVar(Constants.ENV_ALERT_CONTROLLER_PATH, join(getIonicAngularOptimizationComponentsDir(), 'alert', 'alert-controller.js'));
-  setProcessEnvVar(Constants.ENV_ALERT_VIEW_CONTROLLER_PATH, join(getIonicAngularOptimizationComponentsDir(), 'alert', 'alert.js'));
-  setProcessEnvVar(Constants.ENV_ALERT_COMPONENT_PATH, join(getIonicAngularOptimizationComponentsDir(), 'alert', 'alert-component.js'));
-  setProcessEnvVar(Constants.ENV_ALERT_COMPONENT_FACTORY_PATH, join(getIonicAngularOptimizationComponentsDir(), 'alert', 'alert-component.ngfactory.js'));
+  setProcessEnvVar(Constants.ENV_ALERT_CONTROLLER_PATH, join(ionicAngularOptimizationComponentsDir, 'alert', 'alert-controller.js'));
+  setProcessEnvVar(Constants.ENV_ALERT_VIEW_CONTROLLER_PATH, join(ionicAngularOptimizationComponentsDir, 'alert', 'alert.js'));
+  setProcessEnvVar(Constants.ENV_ALERT_COMPONENT_PATH, join(ionicAngularOptimizationComponentsDir, 'alert', 'alert-component.js'));
+  setProcessEnvVar(Constants.ENV_ALERT_COMPONENT_FACTORY_PATH, join(ionicAngularOptimizationComponentsDir, 'alert', 'alert-component.ngfactory.js'));
+  setProcessEnvVar(Constants.ENV_ALERT_COMPONENT_CLASSNAME, 'AlertCmp');
 
-  setProcessEnvVar(Constants.ENV_APP_ROOT_COMPONENT_PATH, join(getIonicAngularOptimizationComponentsDir(), 'app', 'app-root.js'));
+  setProcessEnvVar(Constants.ENV_APP_ROOT_COMPONENT_PATH, join(ionicAngularOptimizationComponentsDir, 'app', 'app-root.js'));
 
   setProcessEnvVar(Constants.ENV_LOADING_CONTROLLER_CLASSNAME, 'LoadingController');
-  setProcessEnvVar(Constants.ENV_LOADING_CONTROLLER_PATH, join(getIonicAngularOptimizationComponentsDir(), 'loading', 'loading-controller.js'));
-  setProcessEnvVar(Constants.ENV_LOADING_VIEW_CONTROLLER_PATH, join(getIonicAngularOptimizationComponentsDir(), 'loading', 'loading.js'));
-  setProcessEnvVar(Constants.ENV_LOADING_COMPONENT_PATH, join(getIonicAngularOptimizationComponentsDir(), 'loading', 'loading-component.js'));
-  setProcessEnvVar(Constants.ENV_LOADING_COMPONENT_FACTORY_PATH, join(getIonicAngularOptimizationComponentsDir(), 'loading', 'loading-component.ngfactory.js'));
+  setProcessEnvVar(Constants.ENV_LOADING_CONTROLLER_PATH, join(ionicAngularOptimizationComponentsDir, 'loading', 'loading-controller.js'));
+  setProcessEnvVar(Constants.ENV_LOADING_VIEW_CONTROLLER_PATH, join(ionicAngularOptimizationComponentsDir, 'loading', 'loading.js'));
+  setProcessEnvVar(Constants.ENV_LOADING_COMPONENT_PATH, join(ionicAngularOptimizationComponentsDir, 'loading', 'loading-component.js'));
+  setProcessEnvVar(Constants.ENV_LOADING_COMPONENT_FACTORY_PATH, join(ionicAngularOptimizationComponentsDir, 'loading', 'loading-component.ngfactory.js'));
+  setProcessEnvVar(Constants.ENV_LOADING_COMPONENT_CLASSNAME, 'LoadingCmp');
 
   setProcessEnvVar(Constants.ENV_MODAL_CONTROLLER_CLASSNAME, 'ModalController');
-  setProcessEnvVar(Constants.ENV_MODAL_CONTROLLER_PATH, join(getIonicAngularOptimizationComponentsDir(), 'modal', 'modal-controller.js'));
-  setProcessEnvVar(Constants.ENV_MODAL_VIEW_CONTROLLER_PATH, join(getIonicAngularOptimizationComponentsDir(), 'modal', 'modal.js'));
-  setProcessEnvVar(Constants.ENV_MODAL_COMPONENT_PATH, join(getIonicAngularOptimizationComponentsDir(), 'modal', 'modal-component.js'));
-  setProcessEnvVar(Constants.ENV_MODAL_COMPONENT_FACTORY_PATH, join(getIonicAngularOptimizationComponentsDir(), 'modal', 'modal-component.ngfactory.js'));
+  setProcessEnvVar(Constants.ENV_MODAL_CONTROLLER_PATH, join(ionicAngularOptimizationComponentsDir, 'modal', 'modal-controller.js'));
+  setProcessEnvVar(Constants.ENV_MODAL_VIEW_CONTROLLER_PATH, join(ionicAngularOptimizationComponentsDir, 'modal', 'modal.js'));
+  setProcessEnvVar(Constants.ENV_MODAL_COMPONENT_PATH, join(ionicAngularOptimizationComponentsDir, 'modal', 'modal-component.js'));
+  setProcessEnvVar(Constants.ENV_MODAL_COMPONENT_FACTORY_PATH, join(ionicAngularOptimizationComponentsDir, 'modal', 'modal-component.ngfactory.js'));
+  setProcessEnvVar(Constants.ENV_MODAL_COMPONENT_CLASSNAME, 'ModalCmp');
 
   setProcessEnvVar(Constants.ENV_PICKER_CONTROLLER_CLASSNAME, 'PickerController');
-  setProcessEnvVar(Constants.ENV_PICKER_CONTROLLER_PATH, join(getIonicAngularOptimizationComponentsDir(), 'picker', 'picker-controller.js'));
-  setProcessEnvVar(Constants.ENV_PICKER_VIEW_CONTROLLER_PATH, join(getIonicAngularOptimizationComponentsDir(), 'picker', 'picker.js'));
-  setProcessEnvVar(Constants.ENV_PICKER_COMPONENT_PATH, join(getIonicAngularOptimizationComponentsDir(), 'picker', 'picker-component.js'));
-  setProcessEnvVar(Constants.ENV_PICKER_COMPONENT_FACTORY_PATH, join(getIonicAngularOptimizationComponentsDir(), 'picker', 'picker-component.ngfactory.js'));
+  setProcessEnvVar(Constants.ENV_PICKER_CONTROLLER_PATH, join(ionicAngularOptimizationComponentsDir, 'picker', 'picker-controller.js'));
+  setProcessEnvVar(Constants.ENV_PICKER_VIEW_CONTROLLER_PATH, join(ionicAngularOptimizationComponentsDir, 'picker', 'picker.js'));
+  setProcessEnvVar(Constants.ENV_PICKER_COMPONENT_PATH, join(ionicAngularOptimizationComponentsDir, 'picker', 'picker-component.js'));
+  setProcessEnvVar(Constants.ENV_PICKER_COMPONENT_FACTORY_PATH, join(ionicAngularOptimizationComponentsDir, 'picker', 'picker-component.ngfactory.js'));
+  setProcessEnvVar(Constants.ENV_PICKER_COMPONENT_CLASSNAME, 'PickerCmp');
 
   setProcessEnvVar(Constants.ENV_POPOVER_CONTROLLER_CLASSNAME, 'PopoverController');
-  setProcessEnvVar(Constants.ENV_POPOVER_CONTROLLER_PATH, join(getIonicAngularOptimizationComponentsDir(), 'popover', 'popover-controller.js'));
-  setProcessEnvVar(Constants.ENV_POPOVER_VIEW_CONTROLLER_PATH, join(getIonicAngularOptimizationComponentsDir(), 'popover', 'popover.js'));
-  setProcessEnvVar(Constants.ENV_POPOVER_COMPONENT_PATH, join(getIonicAngularOptimizationComponentsDir(), 'popover', 'popover-component.js'));
-  setProcessEnvVar(Constants.ENV_POPOVER_COMPONENT_FACTORY_PATH, join(getIonicAngularOptimizationComponentsDir(), 'popover', 'popover-component.ngfactory.js'));
+  setProcessEnvVar(Constants.ENV_POPOVER_CONTROLLER_PATH, join(ionicAngularOptimizationComponentsDir, 'popover', 'popover-controller.js'));
+  setProcessEnvVar(Constants.ENV_POPOVER_VIEW_CONTROLLER_PATH, join(ionicAngularOptimizationComponentsDir, 'popover', 'popover.js'));
+  setProcessEnvVar(Constants.ENV_POPOVER_COMPONENT_PATH, join(ionicAngularOptimizationComponentsDir, 'popover', 'popover-component.js'));
+  setProcessEnvVar(Constants.ENV_POPOVER_COMPONENT_FACTORY_PATH, join(ionicAngularOptimizationComponentsDir, 'popover', 'popover-component.ngfactory.js'));
+  setProcessEnvVar(Constants.ENV_POPOVER_COMPONENT_CLASSNAME, 'PopoverCmp');
 
   setProcessEnvVar(Constants.ENV_SELECT_POPOVER_CLASSNAME, 'SelectPopover');
-  setProcessEnvVar(Constants.ENV_SELECT_POPOVER_COMPONENT_PATH, join(getIonicAngularOptimizationComponentsDir(), 'select', 'select-popover-component.js'));
-  setProcessEnvVar(Constants.ENV_SELECT_POPOVER_COMPONENT_FACTORY_PATH, join(getIonicAngularOptimizationComponentsDir(), 'select', 'select-popover-component.ngfactory.js'));
+  setProcessEnvVar(Constants.ENV_SELECT_POPOVER_COMPONENT_PATH, join(ionicAngularOptimizationComponentsDir, 'select', 'select-popover-component.js'));
+  setProcessEnvVar(Constants.ENV_SELECT_POPOVER_COMPONENT_FACTORY_PATH, join(ionicAngularOptimizationComponentsDir, 'select', 'select-popover-component.ngfactory.js'));
 
   setProcessEnvVar(Constants.ENV_TOAST_CONTROLLER_CLASSNAME, 'ToastController');
-  setProcessEnvVar(Constants.ENV_TOAST_CONTROLLER_PATH, join(getIonicAngularOptimizationComponentsDir(), 'toast', 'toast-controller.js'));
-  setProcessEnvVar(Constants.ENV_TOAST_VIEW_CONTROLLER_PATH, join(getIonicAngularOptimizationComponentsDir(), 'toast', 'toast.js'));
-  setProcessEnvVar(Constants.ENV_TOAST_COMPONENT_PATH, join(getIonicAngularOptimizationComponentsDir(), 'toast', 'toast-component.js'));
-  setProcessEnvVar(Constants.ENV_TOAST_COMPONENT_FACTORY_PATH, join(getIonicAngularOptimizationComponentsDir(), 'toast', 'toast-component.ngfactory.js'));
+  setProcessEnvVar(Constants.ENV_TOAST_CONTROLLER_PATH, join(ionicAngularOptimizationComponentsDir, 'toast', 'toast-controller.js'));
+  setProcessEnvVar(Constants.ENV_TOAST_VIEW_CONTROLLER_PATH, join(ionicAngularOptimizationComponentsDir, 'toast', 'toast.js'));
+  setProcessEnvVar(Constants.ENV_TOAST_COMPONENT_PATH, join(ionicAngularOptimizationComponentsDir, 'toast', 'toast-component.js'));
+  setProcessEnvVar(Constants.ENV_TOAST_COMPONENT_FACTORY_PATH, join(ionicAngularOptimizationComponentsDir, 'toast', 'toast-component.ngfactory.js'));
+  setProcessEnvVar(Constants.ENV_TOAST_CONTROLLER_CLASSNAME, 'ToastCmp');
 
   const parseDeepLinks = getConfigValue(context, '--parseDeepLinks', null, Constants.ENV_PARSE_DEEPLINKS, Constants.ENV_PARSE_DEEPLINKS.toLowerCase(), 'true');
   setProcessEnvVar(Constants.ENV_PARSE_DEEPLINKS, parseDeepLinks);
