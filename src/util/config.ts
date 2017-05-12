@@ -330,7 +330,7 @@ export function generateContext(context?: BuildContext): BuildContext {
   setProcessEnvVar(Constants.ENV_TOAST_VIEW_CONTROLLER_PATH, join(ionicAngularOptimizationComponentsDir, 'toast', 'toast.js'));
   setProcessEnvVar(Constants.ENV_TOAST_COMPONENT_PATH, join(ionicAngularOptimizationComponentsDir, 'toast', 'toast-component.js'));
   setProcessEnvVar(Constants.ENV_TOAST_COMPONENT_FACTORY_PATH, join(ionicAngularOptimizationComponentsDir, 'toast', 'toast-component.ngfactory.js'));
-  setProcessEnvVar(Constants.ENV_TOAST_CONTROLLER_CLASSNAME, 'ToastCmp');
+  setProcessEnvVar(Constants.ENV_TOAST_COMPONENT_CLASSNAME, 'ToastCmp');
 
   const parseDeepLinks = getConfigValue(context, '--parseDeepLinks', null, Constants.ENV_PARSE_DEEPLINKS, Constants.ENV_PARSE_DEEPLINKS.toLowerCase(), 'true');
   setProcessEnvVar(Constants.ENV_PARSE_DEEPLINKS, parseDeepLinks);

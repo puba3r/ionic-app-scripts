@@ -1,13 +1,16 @@
 import { dirname, extname, join, relative } from 'path';
 import { Logger } from '../logger/logger';
 import * as Constants from '../util/constants';
-import { changeExtension, convertFilePathToNgFactoryPath, escapeStringForRegex, getStringPropertyValue, toUnixPath } from '../util/helpers';
+import { changeExtension, convertFilePathToNgFactoryPath, escapeStringForRegex, getStringPropertyValue, replaceAll, toUnixPath } from '../util/helpers';
 import { BuildContext, MagicString, TreeShakeCalcResults } from '../util/interfaces';
-import { findNodes, getTypescriptSourceFile, } from '../util/typescript-utils';
+import { getNodeStringContent, findNodes, getTypescriptSourceFile, } from '../util/typescript-utils';
 
 import {
+  ExportDeclaration,
+  ExportSpecifier,
   ImportDeclaration,
   ImportSpecifier,
+  NamedExports,
   NamedImports,
   StringLiteral,
   SyntaxKind } from 'typescript';
@@ -426,7 +429,8 @@ export function checkIfProviderIsUsedInSrc(context: BuildContext, dependencyMap:
 }
 
 export function purgeModuleFromFesm(originalFesmContent: string, modulePathToPurge: string, magicString: MagicString) {
-  const regex = getModuleFromFesmRegex(modulePathToPurge);
+  const convertedRelativePath = convertToRelativePath(modulePathToPurge);
+  const regex = getModuleFromFesmRegex(convertedRelativePath);
   const results = regex.exec(originalFesmContent);
   if (results) {
     const index = results.index;
@@ -436,8 +440,62 @@ export function purgeModuleFromFesm(originalFesmContent: string, modulePathToPur
   return magicString;
 }
 
-export function getModuleFromFesmRegex(modulePath: string) {
+export function getPublicApiSymbols(filePath: string, fileContent: string) {
+  const sourceFile = getTypescriptSourceFile(filePath, fileContent);
+  const exports = findNodes(sourceFile, sourceFile, SyntaxKind.ExportDeclaration) as ExportDeclaration[];
+  const symbolMap: Map<string, Set<string>> = new Map();
+  exports.forEach((exportDeclaration: ExportDeclaration) => {
+    const exportPath = (exportDeclaration.moduleSpecifier as StringLiteral).text;
+    const modifiedPath = replaceAll(exportPath, './', '');
+    const set = symbolMap.get(modifiedPath) || new Set<string>();
+    if (exportDeclaration.exportClause && exportDeclaration.exportClause.elements) {
+      exportDeclaration.exportClause.elements.forEach((exportSpecifier: ExportSpecifier) => {
+        if (exportSpecifier.name) {
+          const name = exportSpecifier.name.text.trim();
+          set.add(name);
+        }
+      });
+    }
+    symbolMap.set(modifiedPath, set);
+  });
+  return symbolMap;
+}
+
+
+export function purgeExportedSymbolsFromFesm(filePath: string, fileContent: string, symbols: Set<string>, magicString: MagicString) {
+  const sourceFile = getTypescriptSourceFile(filePath, fileContent);
+  const exports = findNodes(sourceFile, sourceFile, SyntaxKind.ExportDeclaration) as ExportDeclaration[];
+  exports.forEach((exportDeclaration: ExportDeclaration) => {
+    const originalExportStatementString = getNodeStringContent(sourceFile, exportDeclaration);
+    const exportStartIndex = fileContent.indexOf(originalExportStatementString);
+    if (exportDeclaration.exportClause && exportDeclaration.exportClause.elements) {
+      exportDeclaration.exportClause.elements.forEach((exportSpecifier: ExportSpecifier) => {
+        if (exportSpecifier.name) {
+          const name = exportSpecifier.name.text.trim();
+          if (symbols.has(name)) {
+            const localStartIndex = originalExportStatementString.indexOf(name);
+            if (localStartIndex >= 0) {
+              let localEndIndex = localStartIndex + name.length;
+              if (originalExportStatementString.length > localEndIndex && originalExportStatementString.charAt(localEndIndex) === ',') {
+                localEndIndex = localEndIndex + 1;
+              }
+              console.log(fileContent.substring(exportStartIndex + localStartIndex, exportStartIndex + localEndIndex));
+              magicString.overwrite(exportStartIndex + localStartIndex, exportStartIndex + localEndIndex, '');
+            }
+          }
+        }
+      });
+    }
+  });
+  return magicString;
+}
+
+
+export function getModuleFromFesmRegex(convertedModulePath: string) {
+  return new RegExp(`\\/\\*.*?start of module.*?${convertedModulePath}.*?\\*\\/[\\s\\S\\n]*?\\/\\*.*?end of module.*?${convertedModulePath}.*?\\*\\/`, `gm`);
+}
+
+export function convertToRelativePath(modulePath: string) {
   const directory = dirname(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_ENTRY_POINT));
-  modulePath = relative(directory, modulePath);
-  return new RegExp(`\\/\\*.*?start of module.*?${modulePath}.*?\\*\\/[\\s\\S\\n]*?\\/\\*.*?end of module.*?${modulePath}.*?\\*\\/`, `gm`);
+  return relative(directory, modulePath);
 }

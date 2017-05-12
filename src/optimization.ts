@@ -1,6 +1,7 @@
+import { readFileSync } from 'fs';
 import { basename, dirname, extname, join, relative } from 'path';
 
-import * as MagicString from 'magic-string';
+import * as MagicStringLib from 'magic-string';
 
 import { AotCompiler } from './aot/aot-compiler';
 import { Logger } from './logger/logger';
@@ -14,14 +15,16 @@ import { changeExtension,
         readAndCacheFile,
         webpackStatsToDependencyMap
 } from './util/helpers';
-import { AotMetadata, BuildContext, TaskInfo, TreeShakeCalcResults } from './util/interfaces';
+import { AotMetadata, BuildContext, MagicString, TaskInfo, TreeShakeCalcResults } from './util/interfaces';
 import { runWebpackFullBuild, WebpackConfig } from './webpack';
 import { addPureAnnotation, purgeStaticCtorFields, purgeStaticFieldDecorators, purgeTranspiledDecorators } from './optimization/decorators';
 import { purgeUnusedProvider, purgeUnusedEntryComponent } from './optimization/metadata';
 import { calculateUnusedComponents,
         checkIfProviderIsUsedInSrc,
         getIonicModuleFilePath,
+        getPublicApiSymbols,
         purgeComponentNgFactoryImportAndUsage,
+        purgeExportedSymbolsFromFesm,
         purgeModuleFromFesm,
         purgeProviderControllerImportAndUsage,
         purgeProviderClassNameFromIonicModuleForRoot,
@@ -46,6 +49,7 @@ function optimizationWorker(context: BuildContext, configFile: string): Promise<
   const webpackConfig = getConfig(context, configFile);
   let dependencyMap: Map<string, Set<string>> = null;
   let response: TreeShakeCalcResults = null;
+  let fesmMagicString: MagicString = null;
   if (optimizationEnabled()) {
     return runWebpackFullBuild(webpackConfig).then((stats: any) => {
       dependencyMap = webpackStatsToDependencyMap(context, stats);
@@ -67,21 +71,31 @@ function optimizationWorker(context: BuildContext, configFile: string): Promise<
       // read the fesm
       return context.fileCache.get(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_ENTRY_POINT)).content;
     }).then((fesmContent: string) => {
-      let magicString = new MagicString(fesmContent);
+
+      fesmMagicString = new MagicStringLib(fesmContent);
       if (response.purgedModules) {
         response.purgedModules.forEach((set: Set<string>, modulePath: string) => {
-          magicString = purgeModuleFromFesm(fesmContent, modulePath, magicString);
+          fesmMagicString = purgeModuleFromFesm(fesmContent, modulePath, fesmMagicString);
         });
       }
-      const updatedFesm = magicString.toString();
+      const updatedFesm = fesmMagicString.toString();
       context.fileCache.set(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_ENTRY_POINT), { path: getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_ENTRY_POINT), content: updatedFesm});
     }).then(() => {
       // load the fesm's metadata.json file
       return readAndCacheFile(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_METADATA));
     }).then((metadataStringContent: string) => {
-      const metadataObject = JSON.parse(metadataStringContent) as AotMetadata;
-      purgeUnusedProviders(context, response.purgedModules, metadataObject);
-      purgeUnusedEntryComponents(context, response.purgedModules, metadataObject);
+      let metadataObject = JSON.parse(metadataStringContent) as AotMetadata;
+      metadataObject = purgeUnusedProviders(context, response.purgedModules, metadataObject);
+      metadataObject = purgeUnusedEntryComponents(context, response.purgedModules, metadataObject);
+      const metadataString = JSON.stringify(metadataObject);
+      if (metadataString === metadataStringContent) {
+        console.log('metadata not changed');
+      } else {
+        console.log('woot, metadata has been changed');
+      }
+      context.fileCache.set(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_METADATA), { path: getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_METADATA), content: metadataString});
+    }).then(() => {
+      return purgeExportsFromFesm(context, response.purgedModules, fesmMagicString);
     }).then(() => {
       console.log('Running AOT again');
       const compiler = new AotCompiler(context, { entryPoint: process.env[Constants.ENV_APP_ENTRY_POINT],
@@ -177,7 +191,7 @@ function optimizationEnabled() {
 function removeDecorators(context: BuildContext) {
   const jsFiles = context.fileCache.getAll().filter(file => extname(file.path) === '.js');
   jsFiles.forEach(jsFile => {
-    let magicString = new MagicString(jsFile.content);
+    let magicString = new MagicStringLib(jsFile.content);
     magicString = purgeStaticFieldDecorators(jsFile.path, jsFile.content, magicString);
     magicString = purgeStaticCtorFields(jsFile.path, jsFile.content, magicString);
     magicString = purgeTranspiledDecorators(jsFile.path, jsFile.content, magicString);
@@ -197,7 +211,7 @@ function purgeUnusedProviders(context: BuildContext, purgeDependencyMap: Map<str
   metadataObject = attemptToPurgeUnusedProvider(context, purgeDependencyMap, metadataObject, getStringPropertyValue(Constants.ENV_ACTION_SHEET_CONTROLLER_PATH), getStringPropertyValue(Constants.ENV_ACTION_SHEET_CONTROLLER_CLASSNAME));
   metadataObject = attemptToPurgeUnusedProvider(context, purgeDependencyMap, metadataObject, getStringPropertyValue(Constants.ENV_ALERT_CONTROLLER_PATH), getStringPropertyValue(Constants.ENV_ALERT_CONTROLLER_CLASSNAME));
   metadataObject = attemptToPurgeUnusedProvider(context, purgeDependencyMap, metadataObject, getStringPropertyValue(Constants.ENV_LOADING_CONTROLLER_PATH), getStringPropertyValue(Constants.ENV_LOADING_CONTROLLER_CLASSNAME));
-  metadataObject = attemptToPurgeUnusedProvider(context, purgeDependencyMap, metadataObject,getStringPropertyValue(Constants.ENV_MODAL_CONTROLLER_PATH), getStringPropertyValue(Constants.ENV_MODAL_CONTROLLER_CLASSNAME));
+  metadataObject = attemptToPurgeUnusedProvider(context, purgeDependencyMap, metadataObject, getStringPropertyValue(Constants.ENV_MODAL_CONTROLLER_PATH), getStringPropertyValue(Constants.ENV_MODAL_CONTROLLER_CLASSNAME));
   metadataObject = attemptToPurgeUnusedProvider(context, purgeDependencyMap, metadataObject, getStringPropertyValue(Constants.ENV_PICKER_CONTROLLER_PATH), getStringPropertyValue(Constants.ENV_PICKER_CONTROLLER_CLASSNAME));
   metadataObject = attemptToPurgeUnusedProvider(context, purgeDependencyMap, metadataObject, getStringPropertyValue(Constants.ENV_POPOVER_CONTROLLER_PATH), getStringPropertyValue(Constants.ENV_POPOVER_CONTROLLER_CLASSNAME));
   metadataObject = attemptToPurgeUnusedProvider(context, purgeDependencyMap, metadataObject, getStringPropertyValue(Constants.ENV_TOAST_CONTROLLER_PATH), getStringPropertyValue(Constants.ENV_TOAST_CONTROLLER_CLASSNAME));
@@ -211,7 +225,7 @@ function purgeUnusedEntryComponents(context: BuildContext, purgeDependencyMap: M
   metadataObject = attemptToPurgeUnusedEntryComponents(context, purgeDependencyMap, metadataObject, getStringPropertyValue(Constants.ENV_MODAL_COMPONENT_PATH), getStringPropertyValue(Constants.ENV_MODAL_COMPONENT_FACTORY_PATH), getStringPropertyValue(Constants.ENV_MODAL_COMPONENT_CLASSNAME));
   metadataObject = attemptToPurgeUnusedEntryComponents(context, purgeDependencyMap, metadataObject, getStringPropertyValue(Constants.ENV_PICKER_COMPONENT_PATH), getStringPropertyValue(Constants.ENV_PICKER_COMPONENT_FACTORY_PATH), getStringPropertyValue(Constants.ENV_PICKER_COMPONENT_CLASSNAME));
   metadataObject = attemptToPurgeUnusedEntryComponents(context, purgeDependencyMap, metadataObject, getStringPropertyValue(Constants.ENV_POPOVER_COMPONENT_PATH), getStringPropertyValue(Constants.ENV_POPOVER_COMPONENT_FACTORY_PATH), getStringPropertyValue(Constants.ENV_POPOVER_COMPONENT_CLASSNAME));
-  metadataObject = attemptToPurgeUnusedEntryComponents(context, purgeDependencyMap, metadataObject,getStringPropertyValue(Constants.ENV_TOAST_COMPONENT_PATH), getStringPropertyValue(Constants.ENV_TOAST_COMPONENT_FACTORY_PATH), getStringPropertyValue(Constants.ENV_TOAST_COMPONENT_CLASSNAME));
+  metadataObject = attemptToPurgeUnusedEntryComponents(context, purgeDependencyMap, metadataObject, getStringPropertyValue(Constants.ENV_TOAST_COMPONENT_PATH), getStringPropertyValue(Constants.ENV_TOAST_COMPONENT_FACTORY_PATH), getStringPropertyValue(Constants.ENV_TOAST_COMPONENT_CLASSNAME));
   metadataObject = attemptToPurgeUnusedEntryComponents(context, purgeDependencyMap, metadataObject, getStringPropertyValue(Constants.ENV_SELECT_POPOVER_COMPONENT_PATH), getStringPropertyValue(Constants.ENV_SELECT_POPOVER_COMPONENT_FACTORY_PATH), getStringPropertyValue(Constants.ENV_SELECT_POPOVER_CLASSNAME));
   return metadataObject;
 }
@@ -223,7 +237,7 @@ function attemptToPurgeUnusedProvider(context: BuildContext, dependencyMap: Map<
     const fesmFile = context.fileCache.get(fesmPath);
     const updatedContent = purgeProviderClassNameFromIonicModuleForRoot(fesmFile.content, providerClassName);
     context.fileCache.set(fesmPath, { path: fesmPath, content: updatedContent});
-    metadataObject = purgeUnusedProvider(metadataObject, providerClassName)
+    metadataObject = purgeUnusedProvider(metadataObject, providerClassName);
   }
   return metadataObject;
 }
@@ -241,6 +255,36 @@ function attemptToPurgeUnusedEntryComponents(context: BuildContext, dependencyMa
   return metadataObject;
 }
 
+function purgeExportsFromFesm(context: BuildContext, purgedModules: Map<string, Set<string>>, magicString: MagicString) {
+  const optimizationEntryPoint = getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_ENTRY_POINT);
+  return readAndCacheFile(optimizationEntryPoint).then((fileContent: string) => {
+    const symbolMap = getPublicApiSymbols(optimizationEntryPoint, fileContent);
+
+    const aggregateSymbols = new Set<string>();
+    purgedModules.forEach((set: Set<string>, modulePath: string) => {
+      // convert path of purged module to find symbols
+      const relativePath = relative(dirname(optimizationEntryPoint), modulePath);
+      const extensionless = changeExtension(relativePath, '');
+      const symbols = symbolMap.get(extensionless);
+      if (symbols) {
+        symbols.forEach(symbol => aggregateSymbols.add(symbol));
+      }
+    });
+
+    // purge the symbols from the export list of the fesm
+    const fesmPath = getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_ENTRY_POINT);
+    const fesmFile = context.fileCache.get(fesmPath);
+    if (!fesmFile) {
+      throw new Error('Fesm not in cache - unable to purge exports');
+    }
+    magicString = purgeExportedSymbolsFromFesm(fesmPath, fesmFile.content, aggregateSymbols, magicString);
+    const updatedFesmContent = magicString.toString();
+    console.log(updatedFesmContent);
+    context.fileCache.set(fesmPath, { path: fesmPath, content: updatedFesmContent});
+  });
+
+}
+
 export function getConfig(context: BuildContext, configFile: string): WebpackConfig {
   configFile = getUserConfigFile(context, taskInfo, configFile);
 
@@ -250,7 +294,6 @@ export function getConfig(context: BuildContext, configFile: string): WebpackCon
 
   return webpackConfig;
 }
-
 
 const taskInfo: TaskInfo = {
   fullArg: '--optimization',

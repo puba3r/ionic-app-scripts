@@ -45,11 +45,11 @@ export function removeIonicModuleEntryComponents(metadataObject: AotMetadata, cl
 function getIonicModuleArgumentsArray(metadataObject: AotMetadata): any {
   const ionicModuleObject = metadataObject.metadata[IONIC_MODULE_KEY];
   if (ionicModuleObject && ionicModuleObject.decorators) {
-    ionicModuleObject.decorators.forEach((node: AotMetadataDecoratorNode) => {
-      if (node.arguments) {
-        return node.arguments;
+    for (const decoratorNode of ionicModuleObject.decorators as AotMetadataDecoratorNode[]) {
+      if (decoratorNode.arguments) {
+        return decoratorNode.arguments;
       }
-    });
+    }
   }
   return null;
 }
