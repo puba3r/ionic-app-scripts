@@ -25,7 +25,7 @@ describe('optimization task', () => {
       spyOn(treeshake, treeshake.calculateUnusedComponents.name);
 
       // act
-      const result = optimization.doOptimizations(context, new Map());
+      const result = optimization.doManualTreeshaking(context, new Map());
 
       // assert
       expect(result).toBeTruthy();
@@ -89,7 +89,7 @@ describe('optimization task', () => {
         return false;
       });
 
-      optimization.doOptimizations(context, new Map());
+      optimization.doManualTreeshaking(context, new Map());
 
       expect(treeshake.calculateUnusedComponents).not.toHaveBeenCalled();
       expect(treeshake.purgeUnusedImportsAndExportsFromModuleFile).not.toHaveBeenCalled();

@@ -462,12 +462,12 @@ export function getPublicApiSymbols(filePath: string, fileContent: string) {
 }
 
 
-export function purgeExportedSymbolsFromFesm(filePath: string, fileContent: string, symbols: Set<string>, magicString: MagicString) {
-  const sourceFile = getTypescriptSourceFile(filePath, fileContent);
+export function purgeExportedSymbolsFromFesm(fesmFilePath: string, originalFesmFileContent: string, symbols: Set<string>, magicString: MagicString) {
+  const sourceFile = getTypescriptSourceFile(fesmFilePath, originalFesmFileContent);
   const exports = findNodes(sourceFile, sourceFile, SyntaxKind.ExportDeclaration) as ExportDeclaration[];
   exports.forEach((exportDeclaration: ExportDeclaration) => {
     const originalExportStatementString = getNodeStringContent(sourceFile, exportDeclaration);
-    const exportStartIndex = fileContent.indexOf(originalExportStatementString);
+    const exportStartIndex = originalFesmFileContent.indexOf(originalExportStatementString);
     if (exportDeclaration.exportClause && exportDeclaration.exportClause.elements) {
       exportDeclaration.exportClause.elements.forEach((exportSpecifier: ExportSpecifier) => {
         if (exportSpecifier.name) {
@@ -479,7 +479,6 @@ export function purgeExportedSymbolsFromFesm(filePath: string, fileContent: stri
               if (originalExportStatementString.length > localEndIndex && originalExportStatementString.charAt(localEndIndex) === ',') {
                 localEndIndex = localEndIndex + 1;
               }
-              console.log(fileContent.substring(exportStartIndex + localStartIndex, exportStartIndex + localEndIndex));
               magicString.overwrite(exportStartIndex + localStartIndex, exportStartIndex + localEndIndex, '');
             }
           }

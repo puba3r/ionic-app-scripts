@@ -1,4 +1,3 @@
-import { readFileSync } from 'fs';
 import { basename, dirname, extname, join, relative } from 'path';
 
 import * as MagicStringLib from 'magic-string';
@@ -15,10 +14,12 @@ import { changeExtension,
         readAndCacheFile,
         webpackStatsToDependencyMap
 } from './util/helpers';
+
 import { AotMetadata, BuildContext, MagicString, TaskInfo, TreeShakeCalcResults } from './util/interfaces';
 import { runWebpackFullBuild, WebpackConfig } from './webpack';
 import { addPureAnnotation, purgeStaticCtorFields, purgeStaticFieldDecorators, purgeTranspiledDecorators } from './optimization/decorators';
 import { purgeUnusedProvider, purgeUnusedEntryComponent } from './optimization/metadata';
+
 import { calculateUnusedComponents,
         checkIfProviderIsUsedInSrc,
         getIonicModuleFilePath,
@@ -29,8 +30,7 @@ import { calculateUnusedComponents,
         purgeProviderControllerImportAndUsage,
         purgeProviderClassNameFromIonicModuleForRoot,
         purgeUnusedImportsAndExportsFromModuleFile,
-        purgeUnusedExportsFromIndexFile,
-
+        purgeUnusedExportsFromIndexFile
 } from './optimization/treeshake';
 
 export function optimization(context: BuildContext, configFile: string) {
@@ -45,84 +45,91 @@ export function optimization(context: BuildContext, configFile: string) {
     });
 }
 
-function optimizationWorker(context: BuildContext, configFile: string): Promise<any> {
-  const webpackConfig = getConfig(context, configFile);
-  let dependencyMap: Map<string, Set<string>> = null;
-  let response: TreeShakeCalcResults = null;
-  let fesmMagicString: MagicString = null;
-  if (optimizationEnabled()) {
-    return runWebpackFullBuild(webpackConfig).then((stats: any) => {
-      dependencyMap = webpackStatsToDependencyMap(context, stats);
-      if (getBooleanPropertyValue(Constants.ENV_PRINT_ORIGINAL_DEPENDENCY_TREE)) {
-        Logger.debug('Original Dependency Map Start');
-        printDependencyMap(dependencyMap);
-        Logger.debug('Original Dependency Map End');
-      }
-
-      purgeGeneratedFiles(context, webpackConfig.output.filename);
-    }).then(() => {
-      return readAndCacheFile(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_ENTRY_POINT));
-    }).then(() => {
-      return doOptimizations(context, dependencyMap);
-    }).then((treeShakeResults: TreeShakeCalcResults) => {
-      response = treeShakeResults;
-      // purge all ionic-angular files from the cache
-      purgeFilesFromCache(context);
-      // read the fesm
-      return context.fileCache.get(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_ENTRY_POINT)).content;
-    }).then((fesmContent: string) => {
-
-      fesmMagicString = new MagicStringLib(fesmContent);
-      if (response.purgedModules) {
-        response.purgedModules.forEach((set: Set<string>, modulePath: string) => {
-          fesmMagicString = purgeModuleFromFesm(fesmContent, modulePath, fesmMagicString);
-        });
-      }
-      const updatedFesm = fesmMagicString.toString();
-      context.fileCache.set(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_ENTRY_POINT), { path: getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_ENTRY_POINT), content: updatedFesm});
-    }).then(() => {
-      // load the fesm's metadata.json file
-      return readAndCacheFile(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_METADATA));
-    }).then((metadataStringContent: string) => {
-      let metadataObject = JSON.parse(metadataStringContent) as AotMetadata;
-      metadataObject = purgeUnusedProviders(context, response.purgedModules, metadataObject);
-      metadataObject = purgeUnusedEntryComponents(context, response.purgedModules, metadataObject);
-      const metadataString = JSON.stringify(metadataObject);
-      if (metadataString === metadataStringContent) {
-        console.log('metadata not changed');
-      } else {
-        console.log('woot, metadata has been changed');
-      }
-      context.fileCache.set(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_METADATA), { path: getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_METADATA), content: metadataString});
-    }).then(() => {
-      return purgeExportsFromFesm(context, response.purgedModules, fesmMagicString);
-    }).then(() => {
-      console.log('Running AOT again');
-      const compiler = new AotCompiler(context, { entryPoint: process.env[Constants.ENV_APP_ENTRY_POINT],
-                                            rootDir: context.rootDir,
-                                            tsConfigPath: process.env[Constants.ENV_TS_CONFIG],
-                                            appNgModuleClass: process.env[Constants.ENV_APP_NG_MODULE_CLASS],
-                                            appNgModulePath: process.env[Constants.ENV_APP_NG_MODULE_PATH],
-                                            forOptimization: false
-                                          });
-      return compiler.compile();
-    });
-  } else {
-    return Promise.resolve();
+async function optimizationWorker(context: BuildContext, configFile: string): Promise<any> {
+  if (!optimizationEnabled()) {
+    return;
   }
+
+  const webpackConfig = getConfig(context, configFile);
+  const stats = await runWebpackFullBuild(webpackConfig);
+  let dependencyMap = webpackStatsToDependencyMap(context, stats);
+  if (getBooleanPropertyValue(Constants.ENV_PRINT_ORIGINAL_DEPENDENCY_TREE)) {
+    Logger.debug('Original Dependency Map Start');
+    printDependencyMap(dependencyMap);
+    Logger.debug('Original Dependency Map End');
+  }
+
+  purgeGeneratedFiles(context, webpackConfig.output.filename);
+
+  const optimizationEntryPointPath = getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_ENTRY_POINT);
+  const originalOptimizationEntryPointContent = context.fileCache.get(optimizationEntryPointPath).content;
+  const fesmFilePath = getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_ENTRY_POINT);
+  const originalFesmContent = await readAndCacheFile(fesmFilePath);
+  let fesmMagicString: MagicString = new MagicStringLib(originalFesmContent);
+
+  // purge decorators from cached files
+  if (getBooleanPropertyValue(Constants.ENV_PURGE_DECORATORS)) {
+    removeDecorators(context);
+  }
+
+  const optimizationResults = doManualTreeshaking(context, dependencyMap);
+
+  if (getBooleanPropertyValue(Constants.ENV_PRINT_MODIFIED_DEPENDENCY_TREE)) {
+    Logger.debug('Modified Dependency Map Start');
+    printDependencyMap(optimizationResults.updatedDependencyMap);
+    Logger.debug('Modified Dependency Map End');
+  }
+
+  // purge stuff from the cache that we don't want cached
+  purgeFilesFromCache(context);
+
+  // process and clean-up metadata
+  const metadataFilePath = getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_METADATA);
+  const originalMetadataContent = await readAndCacheFile(metadataFilePath);
+  const newMetadataContent = await processMetadata(context, optimizationResults.purgedModules, originalMetadataContent);
+  context.fileCache.set(metadataFilePath, { path: metadataFilePath, content: newMetadataContent});
+
+  // purge modules
+  if (optimizationResults.purgedModules) {
+    optimizationResults.purgedModules.forEach((set: Set<string>, modulePath: string) => {
+      fesmMagicString = purgeModuleFromFesm(originalFesmContent, modulePath, fesmMagicString);
+    });
+  }
+
+  console.log('original length: ', originalFesmContent.length);
+  console.log('purged length: ', fesmMagicString.toString().length);
+
+  fesmMagicString = purgeExportsFromFesm(context, optimizationResults.purgedModules, fesmFilePath, originalFesmContent, optimizationEntryPointPath, originalOptimizationEntryPointContent, fesmMagicString);
+
+  console.log('post export length: ', fesmMagicString.toString());
+
+  // run aot
+  const compiler = new AotCompiler(context, { entryPoint: getStringPropertyValue(Constants.ENV_APP_ENTRY_POINT),
+                                          rootDir: context.rootDir,
+                                          tsConfigPath: getStringPropertyValue(Constants.ENV_TS_CONFIG),
+                                          appNgModuleClass: getStringPropertyValue(Constants.ENV_APP_NG_MODULE_CLASS),
+                                          appNgModulePath: getStringPropertyValue(Constants.ENV_APP_NG_MODULE_PATH),
+                                          forOptimization: false
+                                        });
+  return compiler.compile();
 }
+
+async function processMetadata(context: BuildContext, purgedModules: Map<string, Set<string>>, metadataContent: string) {
+  let metadataObject = JSON.parse(metadataContent) as AotMetadata;
+  metadataObject = purgeUnusedProviders(context, purgedModules, metadataObject);
+  metadataObject = purgeUnusedEntryComponents(context, purgedModules, metadataObject);
+  return JSON.stringify(metadataObject);
+}
+
 
 export function purgeGeneratedFiles(context: BuildContext, fileNameSuffix: string) {
   const buildFiles = context.fileCache.getAll().filter(file => file.path.indexOf(context.buildDir) >= 0 && file.path.indexOf(fileNameSuffix) >= 0);
   buildFiles.forEach(buildFile => context.fileCache.remove(buildFile.path));
 }
 
-export function doOptimizations(context: BuildContext, dependencyMap: Map<string, Set<string>>): TreeShakeCalcResults {
+export function doManualTreeshaking(context: BuildContext, dependencyMap: Map<string, Set<string>>): TreeShakeCalcResults {
   // remove decorators
   let modifiedMap = new Map(dependencyMap);
-  if (getBooleanPropertyValue(Constants.ENV_PURGE_DECORATORS)) {
-    removeDecorators(context);
-  }
 
   let purgedModules: Map<string, Set<string>> = null;
   // remove unused component imports
@@ -135,19 +142,10 @@ export function doOptimizations(context: BuildContext, dependencyMap: Map<string
       // due to how the angular compiler works in angular 4, we need to check if
       modifiedMap = checkIfProviderIsUsedInSrc(context, modifiedMap);
       const results = calculateUnusedComponents(modifiedMap);
-      console.log('results.purged: ', results.purgedModules.size);
-      console.log('results.notPurged: ', results.updatedDependencyMap.size);
       purgedModules = results.purgedModules;
       updateIonicComponentsUsed(context, results.updatedDependencyMap);
     }
   }
-
-  if (getBooleanPropertyValue(Constants.ENV_PRINT_MODIFIED_DEPENDENCY_TREE)) {
-    Logger.debug('Modified Dependency Map Start');
-    printDependencyMap(modifiedMap);
-    Logger.debug('Modified Dependency Map End');
-  }
-
 
   return {
     purgedModules: purgedModules,
@@ -255,34 +253,21 @@ function attemptToPurgeUnusedEntryComponents(context: BuildContext, dependencyMa
   return metadataObject;
 }
 
-function purgeExportsFromFesm(context: BuildContext, purgedModules: Map<string, Set<string>>, magicString: MagicString) {
-  const optimizationEntryPoint = getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_OPTIMIZATION_ENTRY_POINT);
-  return readAndCacheFile(optimizationEntryPoint).then((fileContent: string) => {
-    const symbolMap = getPublicApiSymbols(optimizationEntryPoint, fileContent);
-
-    const aggregateSymbols = new Set<string>();
-    purgedModules.forEach((set: Set<string>, modulePath: string) => {
-      // convert path of purged module to find symbols
-      const relativePath = relative(dirname(optimizationEntryPoint), modulePath);
-      const extensionless = changeExtension(relativePath, '');
-      const symbols = symbolMap.get(extensionless);
-      if (symbols) {
-        symbols.forEach(symbol => aggregateSymbols.add(symbol));
-      }
-    });
-
-    // purge the symbols from the export list of the fesm
-    const fesmPath = getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_FESM_ENTRY_POINT);
-    const fesmFile = context.fileCache.get(fesmPath);
-    if (!fesmFile) {
-      throw new Error('Fesm not in cache - unable to purge exports');
+function purgeExportsFromFesm(context: BuildContext, purgedModules: Map<string, Set<string>>, fesmFilePath: string, originalFesmContent: string, optimizationEntryPointPath: string, originalOptimizationEntryPointContent: string, magicString: MagicString) {
+  const symbolMap = getPublicApiSymbols(optimizationEntryPointPath, originalOptimizationEntryPointContent);
+  const aggregateSymbols = new Set<string>();
+  purgedModules.forEach((set: Set<string>, modulePath: string) => {
+    // convert path of purged module to find symbols
+    const relativePath = relative(dirname(optimizationEntryPointPath), modulePath);
+    const extensionless = changeExtension(relativePath, '');
+    const symbols = symbolMap.get(extensionless);
+    if (symbols) {
+      symbols.forEach(symbol => {
+        aggregateSymbols.add(symbol);
+      });
     }
-    magicString = purgeExportedSymbolsFromFesm(fesmPath, fesmFile.content, aggregateSymbols, magicString);
-    const updatedFesmContent = magicString.toString();
-    console.log(updatedFesmContent);
-    context.fileCache.set(fesmPath, { path: fesmPath, content: updatedFesmContent});
   });
-
+  return purgeExportedSymbolsFromFesm(fesmFilePath, originalFesmContent, aggregateSymbols, magicString);
 }
 
 export function getConfig(context: BuildContext, configFile: string): WebpackConfig {
