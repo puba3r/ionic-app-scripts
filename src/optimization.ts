@@ -111,6 +111,20 @@ function removeDecorators(context: BuildContext) {
   const jsFiles = context.fileCache.getAll().filter(file => extname(file.path) === '.js');
   jsFiles.forEach(jsFile => {
     jsFile.content = ngo.call({request: jsFile.path}, jsFile.content);
+
+    let magicString = new MagicString(jsFile.content);
+    magicString = purgeStaticFieldDecorators(jsFile.path, jsFile.content, magicString);
+    magicString = purgeStaticCtorFields(jsFile.path, jsFile.content, magicString);
+    magicString = purgeTranspiledDecorators(jsFile.path, jsFile.content, magicString);
+    magicString = addPureAnnotation(jsFile.path, jsFile.content, magicString);
+    jsFile.content = magicString.toString();
+    const sourceMap = magicString.generateMap({
+      source: basename(jsFile.path),
+      file: basename(jsFile.path),
+      includeContent: true
+    });
+    const sourceMapPath = jsFile.path + '.map';
+    context.fileCache.set(sourceMapPath, { path: sourceMapPath, content: sourceMap.toString()});
   });
 }
 
