@@ -267,6 +267,8 @@ function canRemoveDecoratorNode(decoratorType: string) {
     return true;
   } else if (decoratorType === IONIC_PAGE_DECORATOR) {
     return true;
+  } else if (decoratorType === INJECTABLE_DECORATOR) {
+    return true;
   }
   return false;
 }
@@ -278,6 +280,7 @@ export const DIRECTIVE_DECORATOR = 'Directive';
 export const HOST_DECORATOR = 'Host';
 export const HOST_BINDING_DECORATOR = 'HostBinding';
 export const HOST_LISTENER_DECORATOR = 'HostListener';
+export const INJECTABLE_DECORATOR = 'Injectable';
 export const INPUT_DECORATOR = 'Input';
 export const NG_MODULE_DECORATOR = 'NgModule';
 export const OUTPUT_DECORATOR = 'Output';

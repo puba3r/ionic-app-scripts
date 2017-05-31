@@ -13,3 +13,5 @@ declare module 'ws';
 declare module 'webpack';
 declare module 'webpack/*';
 declare module 'xml2js';
+
+declare module 'ngo-loader';

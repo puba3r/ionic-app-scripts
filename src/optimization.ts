@@ -20,6 +20,8 @@ import { calculateUnusedComponents,
         purgeProviderClassNameFromIonicModuleForRoot
 } from './optimization/treeshake';
 
+import * as ngo from 'ngo-loader';
+
 export function optimization(context: BuildContext, configFile: string) {
   const logger = new Logger(`optimization`);
   return optimizationWorker(context, configFile).then(() => {
@@ -108,19 +110,7 @@ function optimizationEnabled() {
 function removeDecorators(context: BuildContext) {
   const jsFiles = context.fileCache.getAll().filter(file => extname(file.path) === '.js');
   jsFiles.forEach(jsFile => {
-    let magicString = new MagicString(jsFile.content);
-    magicString = purgeStaticFieldDecorators(jsFile.path, jsFile.content, magicString);
-    magicString = purgeStaticCtorFields(jsFile.path, jsFile.content, magicString);
-    magicString = purgeTranspiledDecorators(jsFile.path, jsFile.content, magicString);
-    magicString = addPureAnnotation(jsFile.path, jsFile.content, magicString);
-    jsFile.content = magicString.toString();
-    const sourceMap = magicString.generateMap({
-      source: basename(jsFile.path),
-      file: basename(jsFile.path),
-      includeContent: true
-    });
-    const sourceMapPath = jsFile.path + '.map';
-    context.fileCache.set(sourceMapPath, { path: sourceMapPath, content: sourceMap.toString()});
+    jsFile.content = ngo.call({request: jsFile.path}, jsFile.content);
   });
 }
 
