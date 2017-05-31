@@ -122,7 +122,14 @@ function generateSassData(context: BuildContext, sassConfig: SassConfig) {
   });
 
   // gather a list of all the sass files that are next to components we're bundling
-  const componentSassFiles = getComponentSassFiles(moduleDirectories, context, sassConfig);
+  const componentSassFiles = getComponentSassFiles(moduleDirectories, context, sassConfig)
+          .filter(componentSassFile => {
+            if (componentSassFile.endsWith('.wp.scss') || componentSassFile.endsWith('.ios.scss')) {
+              return false;
+            }
+            return true;
+          });
+  componentSassFiles.forEach(componentSassFile => console.log('file: ', componentSassFile));
 
   Logger.debug(`sass userSassVariableFiles: ${userSassVariableFiles.length}`);
   Logger.debug(`sass componentSassFiles: ${componentSassFiles.length}`);
