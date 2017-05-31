@@ -70,11 +70,12 @@ export function preprocessUpdate(changedFiles: ChangedFile[], context: BuildCont
 }
 
 export function lookUpDefaultIonicComponentPaths(context: BuildContext) {
-  const componentsDir = join(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_DIR), 'components');
-  return globAll([join(componentsDir, '**', '*.scss')]).then((results: GlobResult[]) => {
+  const componentsDirGlob = join(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_DIR), 'components', '**', '*.scss');
+  const srcDirGlob = join(getStringPropertyValue(Constants.ENV_VAR_SRC_DIR), 'components', '**', '*.scss');
+  return globAll([componentsDirGlob, srcDirGlob]).then((results: GlobResult[]) => {
     const componentPathSet = new Set<string>();
     results.forEach(result => {
-      componentPathSet.add(dirname(result.absolutePath));
+      componentPathSet.add(result.absolutePath);
     });
     context.moduleFiles = Array.from(componentPathSet);
   });

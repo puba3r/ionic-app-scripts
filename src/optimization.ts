@@ -76,7 +76,7 @@ export function doOptimizations(context: BuildContext, dependencyMap: Map<string
       modifiedMap = checkIfProviderIsUsedInSrc(context, modifiedMap);
       const results = calculateUnusedComponents(modifiedMap);
       purgeUnusedImports(context, results.purgedModules);
-      updateIonicComponentsUsed(context, results.updatedDependencyMap);
+      updateIonicComponentsUsed(context, dependencyMap, results.purgedModules);
     }
   }
 
@@ -89,14 +89,14 @@ export function doOptimizations(context: BuildContext, dependencyMap: Map<string
   return modifiedMap;
 }
 
-function updateIonicComponentsUsed(context: BuildContext, dependencyMap: Map<string, Set<string>>) {
-  const set = new Set<string>();
-  dependencyMap.forEach((set: Set<string>, modulePath: string) => {
-    if (modulePath.startsWith(join(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_DIR), 'components'))) {
-      set.add(dirname(modulePath));
+function updateIonicComponentsUsed(context: BuildContext, originalDependencyMap: Map<string, Set<string>>, purgedModules: Map<string, Set<string>>) {
+  const includedModuleSet = new Set<string>();
+  originalDependencyMap.forEach((set: Set<string>, modulePath: string) => {
+    if (!purgedModules.has(modulePath)) {
+      includedModuleSet.add(modulePath);
     }
   });
-  context.moduleFiles = Array.from(set);
+  context.moduleFiles = Array.from(includedModuleSet);
 }
 
 function optimizationEnabled() {
