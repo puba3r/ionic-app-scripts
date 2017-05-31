@@ -1,4 +1,4 @@
-import { basename, extname } from 'path';
+import { basename, dirname, extname, join } from 'path';
 
 import * as MagicString from 'magic-string';
 
@@ -76,6 +76,7 @@ export function doOptimizations(context: BuildContext, dependencyMap: Map<string
       modifiedMap = checkIfProviderIsUsedInSrc(context, modifiedMap);
       const results = calculateUnusedComponents(modifiedMap);
       purgeUnusedImports(context, results.purgedModules);
+      updateIonicComponentsUsed(context, results.updatedDependencyMap);
     }
   }
 
@@ -86,6 +87,16 @@ export function doOptimizations(context: BuildContext, dependencyMap: Map<string
   }
 
   return modifiedMap;
+}
+
+function updateIonicComponentsUsed(context: BuildContext, dependencyMap: Map<string, Set<string>>) {
+  const set = new Set<string>();
+  dependencyMap.forEach((set: Set<string>, modulePath: string) => {
+    if (modulePath.startsWith(join(getStringPropertyValue(Constants.ENV_VAR_IONIC_ANGULAR_DIR), 'components'))) {
+      set.add(dirname(modulePath));
+    }
+  });
+  context.moduleFiles = Array.from(set);
 }
 
 function optimizationEnabled() {
