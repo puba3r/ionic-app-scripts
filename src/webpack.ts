@@ -11,6 +11,7 @@ import { emit, EventType } from './util/events';
 import { getBooleanPropertyValue, printDependencyMap, webpackStatsToDependencyMap, writeFileAsync } from './util/helpers';
 import { BuildContext, BuildState, ChangedFile, TaskInfo } from './util/interfaces';
 
+const purify = require('purify/purify');
 
 const eventEmitter = new EventEmitter();
 const INCREMENTAL_BUILD_FAILED = 'incremental_build_failed';
@@ -100,8 +101,14 @@ export function writeBundleFilesToDisk(context: BuildContext) {
   const bundledFilesToWrite = context.fileCache.getAll().filter(file => {
     return dirname(file.path).indexOf(context.buildDir) >= 0 && (file.path.endsWith('.js') || file.path.endsWith('.js.map'));
   });
+
   context.bundledFilePaths = bundledFilesToWrite.map(bundledFile => bundledFile.path);
-  const promises = bundledFilesToWrite.map(bundledFileToWrite => writeFileAsync(bundledFileToWrite.path, bundledFileToWrite.content));
+  const promises = bundledFilesToWrite.map(bundledFileToWrite => {
+    if (bundledFileToWrite.path.endsWith('.js')) {
+      bundledFileToWrite.content = purify(bundledFileToWrite.content, bundledFileToWrite.path);
+    }
+    return writeFileAsync(bundledFileToWrite.path, bundledFileToWrite.content)
+  });
   return Promise.all(promises);
 }
 

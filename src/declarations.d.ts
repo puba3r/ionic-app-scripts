@@ -5,6 +5,7 @@ declare module 'mime-types';
 declare module 'proxyquire';
 declare module 'os-name';
 declare module 'proxy-middleware';
+declare module 'purify';
 declare module 'rollup-pluginutils';
 declare module 'rollup';
 declare module 'tiny-lr';

@@ -7,8 +7,6 @@ import { readFileAsync, writeFileAsync } from './util/helpers';
 import { BuildContext, TaskInfo } from './util/interfaces';
 import { runWorker } from './worker-client';
 
-
-
 export function uglifyjs(context: BuildContext, configFile?: string) {
   configFile = getUserConfigFile(context, taskInfo, configFile);
 
@@ -48,7 +46,7 @@ export async function uglifyjsWorkerImpl(context: BuildContext, uglifyJsConfig: 
 
 async function runUglifyInternal(sourceFilePath: string, destFilePath: string, sourceMapPath: string, destMapPath: string, configObject: any): Promise<any> {
   const sourceFileContentPromise = readFileAsync(sourceFilePath);
-  const [sourceFileContent, sourceMapContent] = await Promise.all([readFileAsync(sourceFilePath), readFileAsync(sourceMapPath)]);
+  let [sourceFileContent, sourceMapContent] = await Promise.all([readFileAsync(sourceFilePath), readFileAsync(sourceMapPath)]);
   const uglifyConfig = Object.assign({}, configObject, {
     sourceMap: {
         content: sourceMapContent
