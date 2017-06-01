@@ -38,7 +38,6 @@ module.exports = {
 
   plugins: [
     ionicWebpackFactory.getIonicEnvironmentPlugin(),
-    ionicWebpackFactory.getCommonChunksPlugin(),
     new ModuleConcatPlugin(),
   ],
 
