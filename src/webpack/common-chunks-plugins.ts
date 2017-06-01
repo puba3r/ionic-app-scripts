@@ -11,6 +11,5 @@ export function getCommonChunksPlugin() {
 }
 
 function checkIfInNodeModules(webpackModule: any) {
-  console.log('Hitting this method: ', webpackModule.userRequest);
   return webpackModule && webpackModule.userRequest && webpackModule.userRequest.startsWith(getStringPropertyValue(Constants.ENV_VAR_NODE_MODULES_DIR));
 }

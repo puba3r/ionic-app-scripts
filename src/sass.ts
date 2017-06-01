@@ -129,7 +129,6 @@ function generateSassData(context: BuildContext, sassConfig: SassConfig) {
             }
             return true;
           });
-  componentSassFiles.forEach(componentSassFile => console.log('file: ', componentSassFile));
 
   Logger.debug(`sass userSassVariableFiles: ${userSassVariableFiles.length}`);
   Logger.debug(`sass componentSassFiles: ${componentSassFiles.length}`);
