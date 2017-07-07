@@ -25,6 +25,7 @@ export interface BuildContext {
   coreDir?: string;
   bundledFilePaths?: string[];
   moduleFiles?: string[];
+  filesOnTsProgram?: string[];
   appNgModulePath?: string;
   isProd?: boolean;
   isWatch?: boolean;

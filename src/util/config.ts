@@ -30,6 +30,10 @@ export function generateContext(context?: BuildContext): BuildContext {
      context.fileCache = new FileCache();
   }
 
+  if (!context.filesOnTsProgram) {
+    context.filesOnTsProgram = [];
+  }
+
   context.isProd = [
     context.isProd,
     hasArg('--prod')
